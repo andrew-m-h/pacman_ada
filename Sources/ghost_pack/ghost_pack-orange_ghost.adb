@@ -20,7 +20,7 @@ package body Ghost_Pack.Orange_Ghost is
       Pos : Coordinates := Board.Get_Ghost_Pos (My_Colour);
    begin
 
-      loop
+      Ghost_Loop : loop
          declare
             Min_Wait : constant Time := Ghost_Delay_Time + Ghost_Wait_Time;
             Deadline : constant Time := Ghost_Delay_Time + Ghost_Deadline;
@@ -35,11 +35,11 @@ package body Ghost_Pack.Orange_Ghost is
                   Service_Loop : loop
                      select
                         accept Set_State (S : Ghost_State) do
-                           requeue Board.Set_Ghost_State (My_Colour);
+                           requeue Board.Set_Ghost_State (My_Colour) with abort;
                         end Set_State;
                      or
                         accept Set_Position (P : Coordinates) do
-                           requeue Board.Set_Ghost_Pos (My_Colour);
+                           requeue Board.Set_Ghost_Pos (My_Colour) with abort;
                         end Set_Position;
                      or
                         accept Which_Ghost (G : out Ghost) do
@@ -116,21 +116,22 @@ package body Ghost_Pack.Orange_Ghost is
                         Dir := Next_Dir;
                      end;
 
-                     Board.Make_Ghost_Move (My_Colour, Dir);
+                     Board.Make_Ghost_Move (My_Colour) (Dir);
 
                   end select;
                exception
                   when Ghost_Render_Timeout =>
                      System_Mode := Safe_Mode;
-                  when others =>
-                     System_Mode := Safe_Mode;
+                  when System_Failure =>
+                     exit Ghost_Loop;
                end;
             end case;
 
             Ghost_Delay_Time := Ghost_Delay_Time + Render_Time;
             delay until Ghost_Delay_Time;
          end;
-      end loop;
+      end loop Ghost_Loop;
+
    end Orange_Ghost_Type;
 
 end Ghost_Pack.Orange_Ghost;

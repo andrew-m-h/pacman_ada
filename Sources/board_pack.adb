@@ -1,35 +1,59 @@
 package body Board_Pack is
 
-   task body Render is
+   ---------------------
+   -- Render Task --
+   ---------------------
 
+   -- Periodical task executing Board.Render every Render_Time on highest priority
+   -- shall cease execution upon receiving a system failure exception from Board
+   task body Render is
       Delay_Time : Time := System_Start;
    begin
-
       loop
          Delay_Time := Delay_Time + Render_Time;
          delay until Delay_Time;
 
-         Board.Render;
+         -- Attempt to render, if render is not open after 5ms, revoke call and skip render cycle
+         -- in the hopes that it will be open for some future calls
+         declare
+            Timeout : constant Time := Delay_Time + Milliseconds (5);
+         begin
+            select
+               Board.Render;
+            or
+               delay until Timeout;
+            end select;
+         end;
       end loop;
 
+   exception
+      when System_Failure => null;
    end Render;
+
+   ---------------------
+   -- Board --
+   ---------------------
+   -- Object mediating interaction with the board and screen from concurrent entities
 
    protected body Board is
 
-      procedure Initialise is
+      -- Run initialisation code and set Board in to 'Initialised' state allowing
+      -- other entries to be run safely
+      entry Initialise
+        when State = Uninitialised is
       begin
+         Ghosts := Ghosts_Data_Initial;
+
+         -- Initialise screen and curses settings
          Init_Windows;
 
-         W := Create (Number_Of_Lines       => Line_Position (Board_Height'Last),
-                      Number_Of_Columns     => Column_Position (Board_Width'Last),
-                      First_Line_Position   => 3,
-                      First_Column_Position => 10);
+         W := Standard_Window;
 
          Set_Echo_Mode (False);
          Set_NoDelay_Mode (W, False);
          Set_Timeout_Mode (W, Non_Blocking, 1);
 
-         Use_Colour := Has_Colors;
+         Use_Colour := Has_Colors; -- Does the terminal allow displaying colours
 
          declare
             V : Cursor_Visibility := Invisible;
@@ -38,10 +62,7 @@ package body Board_Pack is
             pragma Unreferenced (V);
          end;
 
-         -- Box (Win               => W,
-         --      Vertical_Symbol   => Pipe,
-         --      Horizontal_Symbol => Bar);
-
+         -- Initialise the various asset colours used
          if Use_Colour then
             Start_Color;
             Init_Colour (Colour => Zombie_Colour,
@@ -84,56 +105,98 @@ package body Board_Pack is
                        Back => Black);
          end if;
 
+         -- Read in board from external file
          Maze_Pack.Read_Maze ("tmp", M);
 
+         -- Draw board on screen
          for Y in Board_Height'First .. M.Maze_Height loop
             Add (Win    => W,
                  Line   => Line_Position (Y),
-                 Column => Column_Position (Board_Width'First),
+                 Column => Column_Position (Natural (Board_Width'First)),
                  Str    => M.Maze_Str (Y),
-                 Len    => M.Maze_Width);
+                 Len    => Natural (M.Maze_Width));
          end loop;
 
          Player.Pos := M.Initial_Player_Pos;
 
+         State := Initialised;
+
+      exception
+         when Maze_Pack.File_Error =>
+            End_Windows;
+            State := Failure;
+         when Maze_Pack.Parse_Error =>
+            End_Windows;
+            State := Failure;
       end Initialise;
 
-      procedure Set_Player_Pos (Pos : Coordinates) is
+      entry Set_Player_Pos (Pos : Coordinates)
+        when State /= Uninitialised is
       begin
-         Player.Pos := Pos;
+         case State is
+            when Initialised =>
+               Player.Pos := Pos;
+            when others =>
+               raise System_Failure;
+         end case;
       end Set_Player_Pos;
 
-      procedure Make_Player_Move (Dir : Direction) is
+      entry Make_Player_Move (Dir : Direction)
+        when State /= Uninitialised is
       begin
-         Player.Next_Direction := Dir;
+         case State is
+            when Initialised =>
+               Player.Next_Direction := Dir;
+            when others => raise System_Failure;
+         end case;
       end Make_Player_Move;
 
       entry Set_Ghost_Pos (for G in Ghost) (Pos : Coordinates)
-      when True is
+      when State /= Uninitialised is
       begin
-         Ghosts (G).Pos := Pos;
+         case State is
+            when Initialised =>
+               Ghosts (G).Pos := Pos;
+            when others =>
+               raise System_Failure;
+         end case;
       end Set_Ghost_Pos;
 
-      entry Make_Ghost_Move (G : Ghost;
-                             Dir : Direction)
-        when True is
+      entry Make_Ghost_Move (for G in Ghost) (Dir : Direction)
+      when State /= Uninitialised is
       begin
-         Ghosts (G).Current_Direction := Dir;
+         case State is
+            when Initialised =>
+               Ghosts (G).Current_Direction := Dir;
+            when others => raise System_Failure;
+         end case;
       end Make_Ghost_Move;
 
       entry Set_Ghost_State (for G in Ghost) (S : Ghost_State)
-        when True is
+      when State /= Uninitialised is
       begin
-         Ghosts (G).State := S;
+         case State is
+            when Initialised =>
+               Ghosts (G).State := S;
+            when others =>
+               raise System_Failure;
+         end case;
       end Set_Ghost_State;
 
       entry Render
-        when Board.Make_Ghost_Move'Count = 0 is
+        -- Run once initialised and there are no ghosts waiting on the make_ghost_move entries
+        when State /= Uninitialised
+        and then (for all G in Ghost => Board.Make_Ghost_Move (G)'Count = 0) is
       begin
 
+         if State = Failure then
+            raise System_Failure;
+         end if;
+
+         -- Add 'space' where player character is (removing from board)
          Add (Win    => W,
-              Line   => Line_Position (Player.Pos (Y)),
-              Column => Column_Position (Player.Pos (X)),
+              Line   => Line_Position (Player.Pos.Y),
+              Column => Column_Position (Player.Pos.X),
               Ch     => Space);
 
          -- Next_Direction shall only be taken if available, otherwise
@@ -141,19 +204,19 @@ package body Board_Pack is
          if Player.Next_Direction /= Player.Current_Direction then
             case Player.Next_Direction  is
             when Left =>
-               if M.Cells (Player.Pos (X), Player.Pos (Y)).Left then
+               if M.Cells (Player.Pos.X, Player.Pos.Y).Left then
                   Player.Current_Direction := Player.Next_Direction;
                end if;
             when Right =>
-               if M.Cells (Player.Pos (X), Player.Pos (Y)).Right then
+               if M.Cells (Player.Pos.X, Player.Pos.Y).Right then
                   Player.Current_Direction := Player.Next_Direction;
                end if;
             when Up =>
-               if M.Cells (Player.Pos (X), Player.Pos (Y)).Up then
+               if M.Cells (Player.Pos.X, Player.Pos.Y).Up then
                   Player.Current_Direction := Player.Next_Direction;
                end if;
             when Down =>
-               if M.Cells (Player.Pos (X), Player.Pos (Y)).Down then
+               if M.Cells (Player.Pos.X, Player.Pos.Y).Down then
                   Player.Current_Direction := Player.Next_Direction;
                end if;
             end case;
@@ -161,37 +224,37 @@ package body Board_Pack is
 
          case Player.Current_Direction  is
             when Left =>
-               if M.Cells (Player.Pos (X), Player.Pos (Y)).Left then
-                  Player.Pos (X) := Player.Pos (X) - 1;
+               if M.Cells (Player.Pos.X, Player.Pos.Y).Left then
+                  Player.Pos.X := Player.Pos.X - 1;
                end if;
             when Right =>
-               if M.Cells (Player.Pos (X), Player.Pos (Y)).Right then
-                  Player.Pos (X) := Player.Pos (X) + 1;
+               if M.Cells (Player.Pos.X, Player.Pos.Y).Right then
+                  Player.Pos.X := Player.Pos.X + 1;
                end if;
             when Up =>
-               if M.Cells (Player.Pos (X), Player.Pos (Y)).Up then
-                  Player.Pos (Y) := Player.Pos (Y) - 1;
+               if M.Cells (Player.Pos.X, Player.Pos.Y).Up then
+                  Player.Pos.Y := Player.Pos.Y - 1;
                end if;
             when Down =>
-               if M.Cells (Player.Pos (X), Player.Pos (Y)).Down then
-                  Player.Pos (Y) := Player.Pos (Y) + 1;
+               if M.Cells (Player.Pos.X, Player.Pos.Y).Down then
+                  Player.Pos.Y := Player.Pos.Y + 1;
                end if;
          end case;
 
          -- Redraw Pacman Character sprite
          declare
             Player_Char : constant Attributed_Character :=
-              (if Player.Size = Small then Pacman_Small else Pacman_Large);
+              (if Player_Size = Small then Pacman_Small else Pacman_Large);
          begin
             Add (Win    => W,
-                 Line   => Line_Position (Player.Pos (Y)),
-                 Column => Column_Position (Player.Pos (X)),
+                 Line   => Line_Position (Player.Pos.Y),
+                 Column => Column_Position (Player.Pos.X),
                  Ch     => Player_Char);
          end;
-         Player.Size := Switch (Player.Size);
+         Player_Size := not Player_Size;
 
          -- Appropriately Eat Dots / Pills
-         M.Cells (Player.Pos (X), Player.Pos (Y)).Contents := Maze_Pack.None;
+         M.Cells (Player.Pos.X, Player.Pos.Y).Contents := Maze_Pack.None;
 
          -- Ghosts Moves
          for G in Ghost loop
@@ -202,33 +265,33 @@ package body Board_Pack is
                declare
                   Fill_Char : Attributed_Character;
                begin
-                  case M.Cells (Pos (X), Pos (Y)).Contents is
+                  case M.Cells (Pos.X, Pos.Y).Contents is
                      when Maze_Pack.None => Fill_Char := Space;
                      when Maze_Pack.Dot => Fill_Char := Dot;
                      when Maze_Pack.Pill => Fill_Char := Pill;
                   end case;
                   Add (Win    => Win,
-                       Line   => Line_Position (Ghosts (G).Pos (Y)),
-                       Column => Column_Position (Ghosts (G).Pos (X)),
+                       Line   => Line_Position (Ghosts (G).Pos.Y),
+                       Column => Column_Position (Ghosts (G).Pos.X),
                        Ch     => Fill_Char);
                end;
 
                case Ghosts (G).Current_Direction is
                when Left =>
-                  if M.Cells (Pos (X), Pos (Y)).Left then
-                     Ghosts (G).Pos (X) := Ghosts (G).Pos (X) - 1;
+                  if M.Cells (Pos.X, Pos.Y).Left then
+                     Ghosts (G).Pos.X := Ghosts (G).Pos.X - 1;
                   end if;
                when Right =>
-                  if M.Cells (Pos (X), Pos (Y)).Right then
-                     Ghosts (G).Pos (X) := Ghosts (G).Pos (X) + 1;
+                  if M.Cells (Pos.X, Pos.Y).Right then
+                     Ghosts (G).Pos.X := Ghosts (G).Pos.X + 1;
                   end if;
                when Up =>
-                  if M.Cells (Pos (X), Pos (Y)).Up then
-                     Ghosts (G).Pos (Y) := Ghosts (G).Pos (Y) - 1;
+                  if M.Cells (Pos.X, Pos.Y).Up then
+                     Ghosts (G).Pos.Y := Ghosts (G).Pos.Y - 1;
                   end if;
                when Down =>
-                  if M.Cells (Pos (X), Pos (Y)).Down then
-                     Ghosts (G).Pos (Y) := Ghosts (G).Pos (Y) + 1;
+                  if M.Cells (Pos.X, Pos.Y).Down then
+                     Ghosts (G).Pos.Y := Ghosts (G).Pos.Y + 1;
                   end if;
                end case;
             end;
@@ -256,8 +319,8 @@ package body Board_Pack is
                end if;
 
                Add (Win    => W,
-                    Line   => Line_Position (Ghosts (G).Pos (Y)),
-                    Column => Column_Position (Ghosts (G).Pos (X)),
+                    Line   => Line_Position (Ghosts (G).Pos.Y),
+                    Column => Column_Position (Ghosts (G).Pos.X),
                     Ch     => Char);
             end;
          end loop;
@@ -270,15 +333,15 @@ package body Board_Pack is
                   Cancel_Handler (Event     => Fruit_Timer,
                                   Cancelled => Cancel_Successful);
                   Add (Win    => W,
-                       Line   => Line_Position (Fruit.Pos (Y)),
-                       Column => Column_Position (Fruit.Pos (X)),
+                       Line   => Line_Position (Fruit.Pos.Y),
+                       Column => Column_Position (Fruit.Pos.X),
                        Ch     => Space);
                   Fruit_Valid := False;
                end;
             else
                Add (Win    => W,
-                    Line   => Line_Position (Fruit.Pos (Y)),
-                    Column => Column_Position (Fruit.Pos (X)),
+                    Line   => Line_Position (Fruit.Pos.Y),
+                    Column => Column_Position (Fruit.Pos.X),
                     Ch     => Fruit.Ch);
             end if;
          end if;
@@ -289,49 +352,57 @@ package body Board_Pack is
       procedure Fruit_Timeout (Event : in out Timing_Event) is
          pragma Unreferenced (Event);
       begin
-         Add (Win    => W,
-              Line   => Line_Position (Fruit.Pos (Y)),
-              Column => Column_Position (Fruit.Pos (X)),
-              Ch     => Space);
-         Fruit_Valid := False;
+         case State is
+            when Initialised =>
+               -- Remove fruit sprite from board
+               Add (Win    => W,
+                    Line   => Line_Position (Fruit.Pos.Y),
+                    Column => Column_Position (Fruit.Pos.X),
+                    Ch     => Space);
+               Fruit_Valid := False;
+            when others => raise System_Failure;
+         end case;
       end Fruit_Timeout;
 
-      procedure Place_Fruit (F : Fruit_Type) is
+      entry Place_Fruit (F : Fruit_Type)
+        when State /= Uninitialised is
       begin
-         Fruit := F;
-         Fruit_Valid := True;
-         Set_Handler (Event   => Fruit_Timer,
-                      In_Time => Fruit.Timeout,
-                      Handler => Fruit_Timeout_Handler);
+         case State is
+            when Initialised =>
+               Fruit := F;
+               Fruit_Valid := True;
+               -- Set timeout handler
+               Set_Handler (Event   => Fruit_Timer,
+                            In_Time => Fruit.Timeout,
+                            Handler => Fruit_Timeout_Handler);
+            when others => raise System_Failure;
+         end case;
       end Place_Fruit;
 
       function Get_Player_Pos return Coordinates is (Player.Pos);
+      function Get_Player_Heading return Direction is (Player.Current_Direction);
 
       function Get_Ghost_Pos (G : Ghost) return Coordinates is (Ghosts (G).Pos);
       function Get_Ghost_State (G : Ghost) return Ghost_State is (Ghosts (G).State);
-      function Get_Cell (G : Ghost) return Maze_Pack.Maze_Cell is (M.Cells (Ghosts (G).Pos (X), Ghosts (G).Pos (Y)));
+      function Get_Cell (G : Ghost) return Maze_Pack.Maze_Cell is (M.Cells (Ghosts (G).Pos.X, Ghosts (G).Pos.Y));
+      function Get_State return Board_State is (State);
 
       function Win return Window is (W);
    end Board;
 
+   -- Initialise a colour using RGB_Colour which add's bounds checking
+   -- not yet present in AdaCurses
    procedure Init_Colour (Colour : Color_Number;
                           R  : RGB_Colour;
                           G  : RGB_Colour;
                           B  : RGB_Colour) is
    begin
+      -- Directly dispatch to AdaCurses Init_Color
       Init_Color (Color => Colour,
                   Red   => R,
                   Green => G,
                   Blue  => B);
    end Init_Colour;
-
-   function Switch (T : Token_Size) return Token_Size is
-   begin
-      case T is
-         when Small => return Large;
-         when Large => return Small;
-      end case;
-   end Switch;
 
 begin
    Board.Initialise;

@@ -5,8 +5,9 @@ package Player is
 
    pragma Elaborate_Body;
 
+   -- How often to sample for keypresses using the non-blocking
+   -- Get_Keystroke function.
    Keypress_Poll_Interval : constant Time_Span := Render_Time;
-   Keypress_Poll_Delay : Time := System_Start;
 
 private
 

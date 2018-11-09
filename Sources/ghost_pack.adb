@@ -26,10 +26,10 @@ package body Ghost_Pack is
    end Zombie_Handler_Type;
 
    function Distance_Square (A, B : Coordinates) return Natural is
-      DX : constant Integer := Integer (A (X)) - Integer (B (X));
-      DY : constant Integer := Integer (A (Y)) - Integer (B (Y));
+      DX : constant Integer := Integer (A.X) - Integer (B.X);
+      DY : constant Integer := Integer (A.Y) - Integer (B.Y);
    begin
-      return Natural (abs (DX * DX + DY * DY));
+      return Natural (DX * DX + DY * DY);
    end Distance_Square;
 
 end Ghost_Pack;

@@ -54,10 +54,6 @@ project Pacman is
       end case;
    end Builder;
 
-   package Ide is
-      for Documentation_Dir use "Documentation";
-   end Ide;
-
    package Pretty_Printer is
       for Default_Switches ("ada") use ("-l3");
    end Pretty_Printer;
@@ -75,6 +71,10 @@ project Pacman is
 
       end case;
    end Linker;
+
+   package Documentation is
+      for Documentation_Dir use "Documentation";
+   end Documentation; 
 
 end Pacman;
 

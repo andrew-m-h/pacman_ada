@@ -14,6 +14,7 @@ with Ada.Real_Time; use Ada.Real_Time;
 
 procedure Main is
    pragma Priority (System.Priority'First);
+
    Loop_Delay_Time : Time := System_Start;
    G : constant Ghost_Pack.Ghost_Array := Ghost_Pack.Ghost_Tasks;
 
@@ -23,16 +24,22 @@ procedure Main is
 
    F : constant Board_Pack.Fruit_Type := (Ch => Fruit_Symbol,
                                           Timeout => Render_Time * 200,
+                                          Value => Score'First,
                                           Pos => (18, 22)
                                          );
 begin
    Board_Pack.Board.Place_Fruit (F);
    loop
+
       for C in Ghost loop
          G (C).all.Set_State (Zombie);
       end loop;
 
       Loop_Delay_Time := Loop_Delay_Time + Render_Time * 40;
       delay until Loop_Delay_Time;
+
    end loop;
+
+exception
+   when System_Failure => null;
 end Main;

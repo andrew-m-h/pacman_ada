@@ -24,10 +24,10 @@ package body Maze_Pack is
       Dim_IO.Get (File, M.Maze_Height);
 
       -- Get Player Position
-      Dim_IO.Get (File, M.Initial_Player_Pos (X));
+      Dim_IO.Get (File, M.Initial_Player_Pos.X);
       Get (File, Ch);
       Assert (Ch = ',', "Parse Error: Player Position");
-      Dim_IO.Get (File, M.Initial_Player_Pos (Y));
+      Dim_IO.Get (File, M.Initial_Player_Pos.Y);
 
       -- Get Initial Ghost Position
       declare
@@ -39,8 +39,8 @@ package body Maze_Pack is
          Dim_IO.Get (File, Dim_Y);
 
          for G in Ghost loop
-            M.Initial_Ghost_Pos (G)(X) := Dim_X;
-            M.Initial_Ghost_Pos (G)(Y) := Dim_Y;
+            M.Initial_Ghost_Pos (G).X := Dim_X;
+            M.Initial_Ghost_Pos (G).Y := Dim_Y;
          end loop;
       end;
 
@@ -73,6 +73,17 @@ package body Maze_Pack is
                               );
          end loop;
       end loop;
+
+   exception
+      when Status_Error => raise File_Error;
+      when Mode_Error => raise File_Error;
+      when Name_Error => raise File_Error;
+      when Use_Error => raise File_Error;
+      when Device_Error => raise File_Error;
+      when End_Error => raise File_Error;
+      when Data_Error => raise File_Error;
+      when Layout_Error => raise File_Error;
+      when others => raise Parse_Error;
 
    end Read_Maze;
 
