@@ -32,4 +32,40 @@ package body Ghost_Pack is
       return Natural (DX * DX + DY * DY);
    end Distance_Square;
 
+   procedure Choose_Direction (Source, Target : Coordinates; Cell : Maze_Cell; Dir : in out Direction) is
+      Directions_Valid : constant array (Direction) of Boolean :=
+        (Up => Dir /= Down and then Cell.Up,
+         Down => Dir /= Up and then Cell.Down,
+         Left => Dir /= Right and then Cell.Left,
+         Right => Dir /= Left and then Cell.Right);
+
+      Next_Dir : Direction := Dir;
+      Min_Distance : Natural := Natural'Last;
+   begin
+      for D in Direction loop
+         if Directions_Valid (D) then
+            declare
+               Next : constant Coordinates := Next_Cell (Source, D);
+               Dist : constant Natural := Distance_Square (Next, Target);
+            begin
+               if Dist < Min_Distance then
+                  Next_Dir := D;
+                  Min_Distance := Dist;
+               end if;
+            end;
+         end if;
+      end loop;
+
+      Dir := Next_Dir;
+   end Choose_Direction;
+
+   function Reverse_Direction (Dir : Direction) return Direction is
+   begin
+      case Dir is
+         when Up => return Down;
+         when Down => return Up;
+         when Left => return Right;
+         when Right => return Left;
+      end case;
+   end Reverse_Direction;
 end Ghost_Pack;

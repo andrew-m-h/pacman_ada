@@ -5,6 +5,7 @@ private package Ghost_Pack.Red_Ghost is
       overriding entry Set_State (S : Ghost_State);
       overriding entry Set_Position (P : Coordinates);
       overriding entry Which_Ghost (G : out Ghost);
+      overriding entry Set_Mode (M : Ghost_Mode);
    end Red_Ghost_Type;
    Red_Ghost_Task : aliased Red_Ghost_Type;
 

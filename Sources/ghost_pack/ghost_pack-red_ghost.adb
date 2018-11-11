@@ -1,5 +1,4 @@
 with Board_Pack; use Board_Pack;
-with Maze_Pack; use Maze_Pack;
 
 package body Ghost_Pack.Red_Ghost is
 
@@ -17,7 +16,12 @@ package body Ghost_Pack.Red_Ghost is
       My_Colour : constant Ghost := Red;
 
       State : Ghost_State := Board.Get_Ghost_State (My_Colour);
+      Mode, New_Mode : Ghost_Mode := Scatter;
       Pos : Coordinates := Board.Get_Ghost_Pos (My_Colour);
+
+      -- Top Right scatter point
+      Scatter_Point : constant Coordinates :=
+        (X => Board_Width'Last, Y => Board_Height'First);
    begin
 
       Ghost_Loop : loop
@@ -46,6 +50,10 @@ package body Ghost_Pack.Red_Ghost is
                            G := My_Colour;
                         end Which_Ghost;
                      or
+                        accept Set_Mode (M : Ghost_Mode) do
+                           New_Mode := M;
+                        end Set_Mode;
+                     or
                         delay until Min_Wait;
                         exit Service_Loop;
                      end select;
@@ -65,7 +73,7 @@ package body Ghost_Pack.Red_Ghost is
                            when Dead =>
                               Cancel_Handler (Event     => Zombie_Timer,
                                               Cancelled => Did_Cancel);
-                           when Alive => null;
+                           when others => null;
                         end case;
                      end if;
                      State := New_State;
@@ -90,40 +98,32 @@ package body Ghost_Pack.Red_Ghost is
                      raise Ghost_Render_Timeout;
                   then abort
 
-                     -- Blinky
-                     -- Look at any adjoining move tiles, and select the one
-                     -- which will bring ghost closest to player's position
-                     -- Cannot ever move backwards
-                     declare
-                        Cell : constant Maze_Cell := Board.Get_Cell (My_Colour);
-                        Player_Pos : constant Coordinates := Board.Get_Player_Pos;
-                        Directions_Valid : constant array (Direction) of Boolean :=
-                          (Up => Dir /= Down and then Cell.Up,
-                           Down => Dir /= Up and then Cell.Down,
-                           Left => Dir /= Right and then Cell.Left,
-                           Right => Dir /= Left and then Cell.Right);
-                        Next_Dir : Direction := Dir;
-                        Min_Distance : Natural := Natural'Last;
-                     begin
-                        for D in Direction loop
-                           if Directions_Valid (D) then
-                              declare
-                                 Next : constant Coordinates := Next_Cell (Pos, D);
-                                 Dist : constant Natural := Distance_Square (Next, Player_Pos);
-                              begin
-                                 if Dist < Min_Distance then
-                                    Next_Dir := D;
-                                    Min_Distance := Dist;
-                                 end if;
-                              end;
-                           end if;
-                        end loop;
-                        Dir := Next_Dir;
-                     end;
+                     if New_Mode /= Mode then
+                        Dir := Reverse_Direction (Dir);
+                        Mode := New_Mode;
+                     else
 
+                        case Mode is
+                        when Chase =>
+                           -- Blinky
+                           -- Go towards the player tile
+                           Choose_Direction (Source => Pos,
+                                             Target => Board.Get_Player_Pos,
+                                             Cell   => Board.Get_Cell (My_Colour),
+                                             Dir    => Dir);
+
+                        when Scatter =>
+                           Choose_Direction (Source => Pos,
+                                             Target => Scatter_Point,
+                                             Cell   => Board.Get_Cell (My_Colour),
+                                             Dir    => Dir);
+
+                        end case;
+
+                     end if;
                      Board.Make_Ghost_Move (My_Colour) (Dir);
-
                   end select;
+
                exception
                   when Ghost_Render_Timeout =>
                      System_Mode := Safe_Mode;
@@ -136,6 +136,8 @@ package body Ghost_Pack.Red_Ghost is
             delay until Ghost_Delay_Time;
          end;
       end loop Ghost_Loop;
+
+      Board.Set_Failure;
 
    end Red_Ghost_Type;
 

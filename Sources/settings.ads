@@ -17,6 +17,9 @@ package Settings is
    -- the ghosts blue
    type Ghost_State is (Alive, Dead, Zombie);
 
+   -- The ghosts have two modes, which the switch between on a timed basis
+   type Ghost_Mode is (Chase, Scatter);
+
    -- Four directions entities can move
    type Direction is (Left, Right, Up, Down);
 
@@ -43,7 +46,6 @@ package Settings is
    Render_Time : constant Time_Span := Milliseconds (100);
 
    -- Return coordinate of cell in a given direction from another cell.
-   -- Overflows must be checked BEFORE calling this function
    -- @param Pos Starting position from which to advance
    -- @param D direction in which to move
    function Next_Cell (Pos : Coordinates; D : Direction) return Coordinates;

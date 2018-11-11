@@ -1,5 +1,4 @@
 with Board_Pack; use Board_Pack;
-with Maze_Pack; use Maze_Pack;
 
 package body Ghost_Pack.Blue_Ghost is
 
@@ -17,7 +16,13 @@ package body Ghost_Pack.Blue_Ghost is
       My_Colour : constant Ghost := Blue;
 
       State : Ghost_State := Board.Get_Ghost_State (My_Colour);
+      Mode, New_Mode : Ghost_Mode := Scatter;
+
       Pos : Coordinates := Board.Get_Ghost_Pos (My_Colour);
+
+      -- Bottom Right scatter point
+      Scatter_Point : constant Coordinates :=
+        (X => Board_Width'Last, Y => Board_Height'Last);
    begin
 
       Ghost_Loop : loop
@@ -28,7 +33,6 @@ package body Ghost_Pack.Blue_Ghost is
             case System_Mode is
             when Safe_Mode =>
                null;
-
             when Normal_Mode =>
                begin
                   -- Service Entries
@@ -41,6 +45,10 @@ package body Ghost_Pack.Blue_Ghost is
                         accept Set_Position (P : Coordinates) do
                            requeue Board.Set_Ghost_Pos (My_Colour) with abort;
                         end Set_Position;
+                     or
+                        accept Set_Mode (M : Ghost_Mode) do
+                           New_Mode := M;
+                        end Set_Mode;
                      or
                         accept Which_Ghost (G : out Ghost) do
                            G := My_Colour;
@@ -65,7 +73,7 @@ package body Ghost_Pack.Blue_Ghost is
                            when Dead =>
                               Cancel_Handler (Event     => Zombie_Timer,
                                               Cancelled => Did_Cancel);
-                           when Alive => null;
+                           when others => null;
                         end case;
                      end if;
                      State := New_State;
@@ -89,68 +97,58 @@ package body Ghost_Pack.Blue_Ghost is
                      delay until Deadline;
                      raise Ghost_Render_Timeout;
                   then abort
-                     -- Blue Ghost: take the vector between the Red Ghost's position and
-                     -- the tile 2 cells in front of pacman, and double it's measure.
-                     -- This shall be the target cell for the blue ghost.
-                     declare
-                        Cell : constant Maze_Cell := Board.Get_Cell (My_Colour);
-                        Player_Dir : constant Direction := Board.Get_Player_Heading;
+                     if New_Mode /= Mode then
+                        Dir := Reverse_Direction (Dir);
+                        Mode := New_Mode;
+                     else
 
-                        Player_Pos : constant Coordinates := Next_Cell (Pos =>
-                                                                          Next_Cell (Pos => Board.Get_Player_Pos,
-                                                                                     D   => Player_Dir),
-                                                                        D   => Player_Dir);
-                        Blinky_Pos : constant Coordinates := Board.Get_Ghost_Pos (Red);
+                        case Mode is
+                           when Chase =>
 
-                        type Wraparound_Dim_X is mod Board_Width'Last - Board_Width'First + 1;
-                        type Wraparound_Dim_Y is mod Board_Height'Last - Board_Height'First + 1;
-                        type Wraparound_Coord is record
-                           X : Wraparound_Dim_X;
-                           Y : Wraparound_Dim_Y;
-                        end record;
+                              -- Inky
+                              -- Target the position that is pointed to by the vector between
+                              -- Blinky and the point 2 spots ahead of pacman doubled.
 
-                        Player_Pos_Wrap : constant Wraparound_Coord := (X => Wraparound_Dim_X (Player_Pos.X - Board_Width'First),
-                                                                        Y => Wraparound_Dim_Y (Player_Pos.Y - Board_Height'First));
-                        Blinky_Pos_Wrap : constant Wraparound_Coord := (X => Wraparound_Dim_X (Blinky_Pos.X - Board_Width'First),
-                                                                        Y => Wraparound_Dim_Y (Blinky_Pos.Y - Board_Height'First));
-
-                        Target_Coord_Wrap : constant Wraparound_Coord := (X => 2 * Player_Pos_Wrap.X - Blinky_Pos_Wrap.X,
-                                                                          Y => 2 * Player_Pos_Wrap.Y - Blinky_Pos_Wrap.Y);
-
-                        Target_Cell : constant Coordinates := (X => Board_Width (Target_Coord_Wrap.X) + Board_Width'First,
-                                                               Y => Board_Height (Target_Coord_Wrap.Y) + Board_Height'First);
-
-                        Directions_Valid : constant array (Direction) of Boolean :=
-                          (Up => Dir /= Down and then Cell.Up,
-                           Down => Dir /= Up and then Cell.Down,
-                           Left => Dir /= Right and then Cell.Left,
-                           Right => Dir /= Left and then Cell.Right);
-                        Next_Dir : Direction := Dir;
-                        Min_Distance : Natural := Natural'Last;
-                     begin
-                        for D in Direction loop
-                           if Directions_Valid (D) then
                               declare
-                                 Next : constant Coordinates := Next_Cell (Pos, D);
-                                 Dist : constant Natural := Distance_Square (Next, Target_Cell);
+                                 Player_Dir : constant Direction := Board.Get_Player_Heading;
+                                 Player_Pos : constant Coordinates := Next_Cell
+                                   (Next_Cell (Board.Get_Player_Pos, Player_Dir), Player_Dir);
+
+                                 Blinkey_Pos : constant Coordinates := Board.Get_Ghost_Pos (Red);
+
+                                 Target_X : constant Integer := 2 * (Integer (Player_Pos.X) - Integer (Blinkey_Pos.X));
+                                 Target_Y : constant Integer := 2 * (Integer (Player_Pos.Y) - Integer (Blinkey_Pos.Y));
+
+                                 Target : constant Coordinates :=
+                                   (X => (if Target_X < Board_Width'First then Board_Width'First else
+                                              (if Target_X > Board_Width'Last then Board_Width'Last else Board_Width (Target_X))
+                                         ),
+                                    Y => (if Target_Y < Board_Height'First then Board_Height'First else
+                                              (if Target_Y > Board_Height'Last then Board_Height'Last else Board_Height (Target_Y))
+                                         )
+                                   );
                               begin
-                                 if Dist < Min_Distance then
-                                    Next_Dir := D;
-                                    Min_Distance := Dist;
-                                 end if;
+
+                                 Choose_Direction (Source    => Pos,
+                                                   Target    => Target,
+                                                   Cell      => Board.Get_Cell (My_Colour),
+                                                   Dir       => Dir);
                               end;
-                           end if;
-                        end loop;
-                        Dir := Next_Dir;
-                     end;
+
+                           when Scatter =>
+                              Choose_Direction (Source    => Pos,
+                                                Target    => Scatter_Point,
+                                                Cell      => Board.Get_Cell (My_Colour),
+                                                Dir       => Dir);
+                        end case;
+                     end if;
 
                      Board.Make_Ghost_Move (My_Colour) (Dir);
-
                   end select;
                exception
                   when Ghost_Render_Timeout =>
                      System_Mode := Safe_Mode;
-                  when System_Failure =>
+                  when others =>
                      exit Ghost_Loop;
                end;
             end case;
@@ -159,6 +157,9 @@ package body Ghost_Pack.Blue_Ghost is
             delay until Ghost_Delay_Time;
          end;
       end loop Ghost_Loop;
+
+      Board.Set_Failure;
+
    end Blue_Ghost_Type;
 
 end Ghost_Pack.Blue_Ghost;

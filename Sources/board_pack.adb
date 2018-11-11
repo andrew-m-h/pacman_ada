@@ -103,6 +103,9 @@ package body Board_Pack is
             Init_Pair (Pair => Colour_Pairs (Border_Element),
                        Fore => Green,
                        Back => Black);
+            Init_Pair (Pair => Colour_Pairs (Ghost_Error),
+                       Fore => Green,
+                       Back => Black);
          end if;
 
          -- Read in board from external file
@@ -182,6 +185,11 @@ package body Board_Pack is
                raise System_Failure;
          end case;
       end Set_Ghost_State;
+
+      procedure Set_Failure is
+      begin
+         State := Failure;
+      end Set_Failure;
 
       entry Render
         -- Run once initialised and there are no ghosts waiting on the make_ghost_move entries

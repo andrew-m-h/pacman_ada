@@ -5,6 +5,7 @@ private package Ghost_Pack.Orange_Ghost is
       overriding entry Set_State (S : Ghost_State);
       overriding entry Set_Position (P : Coordinates);
       overriding entry Which_Ghost (G : out Ghost);
+      overriding entry Set_Mode (M : Ghost_Mode);
    end Orange_Ghost_Type;
    Orange_Ghost_Task : aliased Orange_Ghost_Type;
 

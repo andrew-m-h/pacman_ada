@@ -83,6 +83,8 @@ package Board_Pack is
       entry Make_Ghost_Move (Ghost) (Dir : Direction);
       -- Change the state of a specific ghost
       entry Set_Ghost_State (Ghost) (S : Ghost_State);
+      -- A failure occured somewhere, tell the board
+      procedure Set_Failure;
 
       -- Write the current state of the board to the screen.
       entry Render;
@@ -131,12 +133,12 @@ private
    type Symbol_Colour is (Player_Colour, Red_Ghost,
                           Blue_Ghost, Orange_Ghost,
                           Pink_Ghost, Zombie_Ghost,
-                          Border_Element);
+                          Border_Element, Ghost_Error);
    Colour_Pairs : constant array (Symbol_Colour) of Redefinable_Color_Pair :=
      (Player_Colour => 1, Red_Ghost => 2,
       Blue_Ghost => 3, Orange_Ghost => 4,
       Pink_Ghost => 5, Zombie_Ghost => 6,
-      Border_Element => 7
+      Border_Element => 7, Ghost_Error => 8
      );
 
    Zombie_Colour : constant Color_Number := 239;

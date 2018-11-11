@@ -2,6 +2,8 @@ with Ghost_Abstract; use Ghost_Abstract;
 with Settings; use Settings;
 with Ada.Real_Time; use Ada.Real_Time;
 with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
+with Ada.Text_IO; pragma Unreferenced (Ada.Text_IO);
+with Maze_Pack; use Maze_Pack;
 
 package Ghost_Pack is
 
@@ -13,7 +15,6 @@ package Ghost_Pack is
      with Inline_Always;
 
 private
-
    -- Ghosts operate under real time constraint, missing a deadline shall send
    -- A ghost into Safe_Mode to handle system degredation
    -- @value Normal_Mode Normal mode of execution, making a move before each render
@@ -49,4 +50,10 @@ private
    -- and this can be efficiantly calculated without using square roots
    function Distance_Square (A, B : Coordinates) return Natural;
 
+   -- Greedy algorithm used by the ghosts to choose a direction which
+   -- brings them towards their target point from the source.
+   procedure Choose_Direction (Source, Target : Coordinates; Cell : Maze_Cell; Dir : in out Direction);
+
+   -- select the reversed direction
+   function Reverse_Direction (Dir : Direction) return Direction;
 end Ghost_Pack;

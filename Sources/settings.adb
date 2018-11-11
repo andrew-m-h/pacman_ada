@@ -18,6 +18,7 @@ package body Settings is
             when Left => Output.X := Board_Width'First;
             when Right => Output.X := Board_Width'Last;
          end case;
+
          return Output;
    end Next_Cell;
 
