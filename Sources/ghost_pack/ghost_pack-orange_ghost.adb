@@ -30,6 +30,8 @@ package body Ghost_Pack.Orange_Ghost is
             Min_Wait : constant Time := Ghost_Delay_Time + Ghost_Wait_Time;
             Deadline : constant Time := Ghost_Delay_Time + Ghost_Deadline;
          begin
+            Random_Direction.Reset (Generator);
+
             case System_Mode is
             when Safe_Mode =>
                null;
@@ -99,46 +101,57 @@ package body Ghost_Pack.Orange_Ghost is
                      raise Ghost_Render_Timeout;
                   then abort
 
-                     if New_Mode /= Mode then
-                        Dir := Reverse_Direction (Dir);
-                        Mode := New_Mode;
-                     else
+                     case State is
+                        when Zombie =>
+                           Mode := New_Mode;
+                           Choose_Random_Direction (Gen  => Generator,
+                                                    Cell => Board.Get_Cell (My_Colour),
+                                                    Dir  => Dir);
+                           Board.Make_Ghost_Move (My_Colour) (Dir);
+                        when Alive =>
 
-                        case Mode is
-                           when Chase =>
-                              -- Clyde
-                              -- If distance from pacman is GREATER than 8 tiles, then target pacman (like Blinky)
-                              -- otherwise target the bottom left hand corner of the map
+                           if New_Mode /= Mode then
+                              Dir := Reverse_Direction (Dir);
+                              Mode := New_Mode;
+                           else
 
-                              declare
-                                 Player_Pos : constant Coordinates := Board.Get_Player_Pos;
-                                 Limit_Square : constant Natural := 8 * 8;
-                                 Bottom_Left : constant Coordinates :=
-                                   (X => Board_Width'First, Y => Board_Height'Last);
-                              begin
-                                 if Distance_Square (Pos, Player_Pos) > Limit_Square then
-                                    Choose_Direction (Source    => Pos,
-                                                      Target    => Player_Pos,
-                                                      Cell      => Board.Get_Cell (My_Colour),
-                                                      Dir       => Dir);
-                                 else
-                                    Choose_Direction (Source    => Pos,
-                                                      Target    => Bottom_Left,
-                                                      Cell      => Board.Get_Cell (My_Colour),
-                                                      Dir       => Dir);
-                                 end if;
+                              case Mode is
+                              when Chase =>
+                                 -- Clyde
+                                 -- If distance from pacman is GREATER than 8 tiles, then target pacman (like Blinky)
+                                 -- otherwise target the bottom left hand corner of the map
 
-                              end;
-                           when Scatter =>
-                              Choose_Direction (Source    => Pos,
-                                                Target    => Scatter_Point,
-                                                Cell      => Board.Get_Cell (My_Colour),
-                                                Dir       => Dir);
-                        end case;
-                     end if;
+                                 declare
+                                    Player_Pos : constant Coordinates := Board.Get_Player_Pos;
+                                    Limit_Square : constant Natural := 8 * 8;
+                                    Bottom_Left : constant Coordinates :=
+                                      (X => Board_Width'First, Y => Board_Height'Last);
+                                 begin
+                                    if Distance_Square (Pos, Player_Pos) > Limit_Square then
+                                       Choose_Direction (Source    => Pos,
+                                                         Target    => Player_Pos,
+                                                         Cell      => Board.Get_Cell (My_Colour),
+                                                         Dir       => Dir);
+                                    else
+                                       Choose_Direction (Source    => Pos,
+                                                         Target    => Bottom_Left,
+                                                         Cell      => Board.Get_Cell (My_Colour),
+                                                         Dir       => Dir);
+                                    end if;
 
-                     Board.Make_Ghost_Move (My_Colour) (Dir);
+                                 end;
+                              when Scatter =>
+                                 Choose_Direction (Source    => Pos,
+                                                   Target    => Scatter_Point,
+                                                   Cell      => Board.Get_Cell (My_Colour),
+                                                   Dir       => Dir);
+                              end case;
+                           end if;
 
+                           Board.Make_Ghost_Move (My_Colour) (Dir);
+
+                        when Dead => null;
+                     end case;
                   end select;
                exception
                   when Ghost_Render_Timeout =>

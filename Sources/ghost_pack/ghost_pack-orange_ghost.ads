@@ -7,6 +7,7 @@ private package Ghost_Pack.Orange_Ghost is
       overriding entry Which_Ghost (G : out Ghost);
       overriding entry Set_Mode (M : Ghost_Mode);
    end Orange_Ghost_Type;
+
    Orange_Ghost_Task : aliased Orange_Ghost_Type;
 
    Zombie_Handler : Zombie_Handler_Type;
@@ -14,4 +15,7 @@ private package Ghost_Pack.Orange_Ghost is
    Zombie_Timer : Timing_Event;
 
    Handler : constant Timing_Event_Handler := Zombie_Handler.Handler'Access;
+
+   Generator : Random_Direction.Generator;
+
 end Ghost_Pack.Orange_Ghost;

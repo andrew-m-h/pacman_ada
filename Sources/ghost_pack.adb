@@ -68,4 +68,30 @@ package body Ghost_Pack is
          when Right => return Left;
       end case;
    end Reverse_Direction;
+
+   procedure Choose_Random_Direction (Gen : Random_Direction.Generator; Cell : Maze_Cell; Dir : in out Direction) is
+
+      Directions_Valid : constant array (Direction) of Boolean :=
+        (Up => Dir /= Down and then Cell.Up,
+         Down => Dir /= Up and then Cell.Down,
+         Left => Dir /= Right and then Cell.Left,
+         Right => Dir /= Left and then Cell.Right);
+
+      Count_Valid : Natural := Natural'First;
+   begin
+
+      for D of Directions_Valid loop
+         if D then
+            Count_Valid := Natural'Succ (Count_Valid);
+         end if;
+      end loop;
+
+      if Count_Valid > Natural'First then
+         Dir_Loop :
+         loop
+            Dir := Random_Direction.Random (Gen);
+            exit Dir_Loop when Directions_Valid (Dir);
+         end loop Dir_Loop;
+      end if;
+   end Choose_Random_Direction;
 end Ghost_Pack;

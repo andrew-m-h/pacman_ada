@@ -192,7 +192,7 @@ package body Board_Pack is
       end Set_Failure;
 
       entry Render
-        -- Run once initialised and there are no ghosts waiting on the make_ghost_move entries
+      -- Run once initialised and there are no ghosts waiting on the make_ghost_move entries
         when State /= Uninitialised
         and then (for all G in Ghost => Board.Make_Ghost_Move (G)'Count = 0) is
       begin
@@ -262,77 +262,93 @@ package body Board_Pack is
          Player_Size := not Player_Size;
 
          -- Appropriately Eat Dots / Pills
+         if M.Cells (Player.Pos.X, Player.Pos.Y).Contents = Maze_Pack.Pill then
+            for G in Ghost loop
+               if Ghosts (G).State = Alive then
+                  Ghosts (G).State := Zombie;
+               end if;
+            end loop;
+         end if;
+
          M.Cells (Player.Pos.X, Player.Pos.Y).Contents := Maze_Pack.None;
+
+         Check_Collision;
 
          -- Ghosts Moves
          for G in Ghost loop
-            declare
-               Pos : constant Coordinates := Ghosts (G).Pos;
-            begin
-               -- Fill behind with appropriate character
+            if Ghosts (G).State /= Dead then
+
                declare
-                  Fill_Char : Attributed_Character;
+                  Pos : constant Coordinates := Ghosts (G).Pos;
                begin
-                  case M.Cells (Pos.X, Pos.Y).Contents is
+                  -- Fill behind with appropriate character
+                  declare
+                     Fill_Char : Attributed_Character;
+                  begin
+                     case M.Cells (Pos.X, Pos.Y).Contents is
                      when Maze_Pack.None => Fill_Char := Space;
                      when Maze_Pack.Dot => Fill_Char := Dot;
                      when Maze_Pack.Pill => Fill_Char := Pill;
+                     end case;
+                     Add (Win    => Win,
+                          Line   => Line_Position (Ghosts (G).Pos.Y),
+                          Column => Column_Position (Ghosts (G).Pos.X),
+                          Ch     => Fill_Char);
+                  end;
+
+                  case Ghosts (G).Current_Direction is
+                  when Left =>
+                     if M.Cells (Pos.X, Pos.Y).Left then
+                        Ghosts (G).Pos.X := Ghosts (G).Pos.X - 1;
+                     end if;
+                  when Right =>
+                     if M.Cells (Pos.X, Pos.Y).Right then
+                        Ghosts (G).Pos.X := Ghosts (G).Pos.X + 1;
+                     end if;
+                  when Up =>
+                     if M.Cells (Pos.X, Pos.Y).Up then
+                        Ghosts (G).Pos.Y := Ghosts (G).Pos.Y - 1;
+                     end if;
+                  when Down =>
+                     if M.Cells (Pos.X, Pos.Y).Down then
+                        Ghosts (G).Pos.Y := Ghosts (G).Pos.Y + 1;
+                     end if;
                   end case;
-                  Add (Win    => Win,
-                       Line   => Line_Position (Ghosts (G).Pos.Y),
-                       Column => Column_Position (Ghosts (G).Pos.X),
-                       Ch     => Fill_Char);
                end;
 
-               case Ghosts (G).Current_Direction is
-               when Left =>
-                  if M.Cells (Pos.X, Pos.Y).Left then
-                     Ghosts (G).Pos.X := Ghosts (G).Pos.X - 1;
-                  end if;
-               when Right =>
-                  if M.Cells (Pos.X, Pos.Y).Right then
-                     Ghosts (G).Pos.X := Ghosts (G).Pos.X + 1;
-                  end if;
-               when Up =>
-                  if M.Cells (Pos.X, Pos.Y).Up then
-                     Ghosts (G).Pos.Y := Ghosts (G).Pos.Y - 1;
-                  end if;
-               when Down =>
-                  if M.Cells (Pos.X, Pos.Y).Down then
-                     Ghosts (G).Pos.Y := Ghosts (G).Pos.Y + 1;
-                  end if;
-               end case;
-            end;
-
-            declare
-               Char : Attributed_Character := Ghosts (G).Symbol;
-            begin
-               case G is
+               declare
+                  Ghost_Char : Attributed_Character := Ghosts (G).Symbol;
+               begin
+                  case G is
                   when Settings.Red =>
-                     Char.Color := Colour_Pairs (Red_Ghost);
+                     Ghost_Char.Color := Colour_Pairs (Red_Ghost);
                   when Settings.Blue =>
-                     Char.Color := Colour_Pairs (Blue_Ghost);
+                     Ghost_Char.Color := Colour_Pairs (Blue_Ghost);
                   when Settings.Orange =>
-                     Char.Color := Colour_Pairs (Orange_Ghost);
+                     Ghost_Char.Color := Colour_Pairs (Orange_Ghost);
                   when Settings.Pink =>
-                     Char.Color := Colour_Pairs (Pink_Ghost);
-               end case;
+                     Ghost_Char.Color := Colour_Pairs (Pink_Ghost);
+                  end case;
 
-               if Ghosts (G).State = Zombie then
-                  if Use_Colour then
-                     Char.Color := Colour_Pairs (Zombie_Ghost);
-                  else
-                     Char.Attr.Dim_Character := True;
+                  if Ghosts (G).State = Zombie then
+                     if Use_Colour then
+                        Ghost_Char.Color := Colour_Pairs (Zombie_Ghost);
+                     else
+                        Ghost_Char.Attr.Dim_Character := True;
+                     end if;
                   end if;
-               end if;
 
-               Add (Win    => W,
-                    Line   => Line_Position (Ghosts (G).Pos.Y),
-                    Column => Column_Position (Ghosts (G).Pos.X),
-                    Ch     => Char);
-            end;
+                  Add (Win    => W,
+                       Line   => Line_Position (Ghosts (G).Pos.Y),
+                       Column => Column_Position (Ghosts (G).Pos.X),
+                       Ch     => Ghost_Char);
+               end;
+            end if;
          end loop;
 
+         Check_Collision;
+
+         -- Check the fruit event handler if necessary
          if Fruit_Valid then
             if Player.Pos = Fruit.Pos then
                declare
@@ -357,18 +373,38 @@ package body Board_Pack is
          Redraw (W);
       end Render;
 
+      procedure Check_Collision is
+      begin
+         -- Check if ghosts eat pacman or otherwise pacman eats ghosts!
+         for G in Ghost loop
+            if Ghosts (G).Pos = Player.Pos then
+               case Ghosts (G).State is
+               when Zombie =>
+                  Ghosts (G).State := Dead;
+                  Add (Win    => W,
+                       Line   => Line_Position (Ghosts (G).Pos.Y),
+                       Column => Column_Position (Ghosts (G).Pos.X),
+                       Ch     => Pacman_Large);
+               when Alive =>
+                  raise System_Failure;
+               when Dead => null;
+               end case;
+            end if;
+         end loop;
+      end Check_Collision;
+
       procedure Fruit_Timeout (Event : in out Timing_Event) is
          pragma Unreferenced (Event);
       begin
          case State is
-            when Initialised =>
-               -- Remove fruit sprite from board
-               Add (Win    => W,
-                    Line   => Line_Position (Fruit.Pos.Y),
-                    Column => Column_Position (Fruit.Pos.X),
-                    Ch     => Space);
-               Fruit_Valid := False;
-            when others => raise System_Failure;
+         when Initialised =>
+            -- Remove fruit sprite from board
+            Add (Win    => W,
+                 Line   => Line_Position (Fruit.Pos.Y),
+                 Column => Column_Position (Fruit.Pos.X),
+                 Ch     => Space);
+            Fruit_Valid := False;
+         when others => raise System_Failure;
          end case;
       end Fruit_Timeout;
 
@@ -376,14 +412,14 @@ package body Board_Pack is
         when State /= Uninitialised is
       begin
          case State is
-            when Initialised =>
-               Fruit := F;
-               Fruit_Valid := True;
-               -- Set timeout handler
-               Set_Handler (Event   => Fruit_Timer,
-                            In_Time => Fruit.Timeout,
-                            Handler => Fruit_Timeout_Handler);
-            when others => raise System_Failure;
+         when Initialised =>
+            Fruit := F;
+            Fruit_Valid := True;
+            -- Set timeout handler
+            Set_Handler (Event   => Fruit_Timer,
+                         In_Time => Fruit.Timeout,
+                         Handler => Fruit_Timeout_Handler);
+         when others => raise System_Failure;
          end case;
       end Place_Fruit;
 

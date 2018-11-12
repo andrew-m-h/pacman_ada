@@ -26,5 +26,6 @@ package Ghost_Abstract is
 
    procedure Set_Mode (G : in out Ghost_Interface;
                        M : Ghost_Mode) is abstract;
+
    type Ghost_Type is access all Ghost_Interface'Class;
 end Ghost_Abstract;

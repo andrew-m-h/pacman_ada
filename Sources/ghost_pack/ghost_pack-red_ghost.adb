@@ -23,6 +23,7 @@ package body Ghost_Pack.Red_Ghost is
       Scatter_Point : constant Coordinates :=
         (X => Board_Width'Last, Y => Board_Height'First);
    begin
+      Random_Direction.Reset (Generator);
 
       Ghost_Loop : loop
          declare
@@ -97,31 +98,42 @@ package body Ghost_Pack.Red_Ghost is
                      delay until Deadline;
                      raise Ghost_Render_Timeout;
                   then abort
+                     case State is
+                        when Zombie =>
+                           Mode := New_Mode;
+                           Choose_Random_Direction (Gen  => Generator,
+                                                    Cell => Board.Get_Cell (My_Colour),
+                                                    Dir  => Dir);
+                           Board.Make_Ghost_Move (My_Colour) (Dir);
+                        when Alive =>
 
-                     if New_Mode /= Mode then
-                        Dir := Reverse_Direction (Dir);
-                        Mode := New_Mode;
-                     else
+                           if New_Mode /= Mode then
+                              Dir := Reverse_Direction (Dir);
+                              Mode := New_Mode;
+                           else
 
-                        case Mode is
-                        when Chase =>
-                           -- Blinky
-                           -- Go towards the player tile
-                           Choose_Direction (Source => Pos,
-                                             Target => Board.Get_Player_Pos,
-                                             Cell   => Board.Get_Cell (My_Colour),
-                                             Dir    => Dir);
+                              case Mode is
+                              when Chase =>
+                                 -- Blinky
+                                 -- Go towards the player tile
+                                 Choose_Direction (Source => Pos,
+                                                   Target => Board.Get_Player_Pos,
+                                                   Cell   => Board.Get_Cell (My_Colour),
+                                                   Dir    => Dir);
 
-                        when Scatter =>
-                           Choose_Direction (Source => Pos,
-                                             Target => Scatter_Point,
-                                             Cell   => Board.Get_Cell (My_Colour),
-                                             Dir    => Dir);
+                              when Scatter =>
+                                 Choose_Direction (Source => Pos,
+                                                   Target => Scatter_Point,
+                                                   Cell   => Board.Get_Cell (My_Colour),
+                                                   Dir    => Dir);
 
-                        end case;
+                              end case;
 
-                     end if;
-                     Board.Make_Ghost_Move (My_Colour) (Dir);
+                           end if;
+                           Board.Make_Ghost_Move (My_Colour) (Dir);
+
+                        when Dead => null;
+                     end case;
                   end select;
 
                exception

@@ -29,6 +29,7 @@ package Settings is
    subtype Board_Dimension is Positive;
    subtype Board_Height is Board_Dimension range 1 .. 40;
    subtype Board_Width is Board_Dimension range 1 .. 40;
+
    -- Locate an object on the board
    -- @field X Starting from 1 being the leftermost column
    -- @field Y Starting from 1 being the topmost row

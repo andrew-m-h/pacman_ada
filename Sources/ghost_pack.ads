@@ -2,10 +2,12 @@ with Ghost_Abstract; use Ghost_Abstract;
 with Settings; use Settings;
 with Ada.Real_Time; use Ada.Real_Time;
 with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
-with Ada.Text_IO; pragma Unreferenced (Ada.Text_IO);
+with Ada.Numerics.Discrete_Random;
 with Maze_Pack; use Maze_Pack;
 
 package Ghost_Pack is
+
+   package Random_Direction is new Ada.Numerics.Discrete_Random (Direction);
 
    -- Array allowing access to ghosts for external manipulation
    type Ghost_Array is array (Ghost) of Ghost_Type;
@@ -43,7 +45,7 @@ private
       Timeout_Occurred : Boolean := False;
    end Zombie_Handler_Type;
 
-   Zombie_Time_Out : constant Time_Span := Render_Time * 10;
+   Zombie_Time_Out : constant Time_Span := Render_Time * 30;
 
    -- Return square of euclidian distance between two coordinates
    -- Many ghost algorithms require taking the shortest euclidian distance
@@ -56,4 +58,6 @@ private
 
    -- select the reversed direction
    function Reverse_Direction (Dir : Direction) return Direction;
+
+   procedure Choose_Random_Direction (Gen : Random_Direction.Generator; Cell : Maze_Cell; Dir : in out Direction);
 end Ghost_Pack;

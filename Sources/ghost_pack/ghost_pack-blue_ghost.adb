@@ -30,6 +30,8 @@ package body Ghost_Pack.Blue_Ghost is
             Min_Wait : constant Time := Ghost_Delay_Time + Ghost_Wait_Time;
             Deadline : constant Time := Ghost_Delay_Time + Ghost_Deadline;
          begin
+            Random_Direction.Reset (Generator);
+
             case System_Mode is
             when Safe_Mode =>
                null;
@@ -97,54 +99,75 @@ package body Ghost_Pack.Blue_Ghost is
                      delay until Deadline;
                      raise Ghost_Render_Timeout;
                   then abort
-                     if New_Mode /= Mode then
-                        Dir := Reverse_Direction (Dir);
-                        Mode := New_Mode;
-                     else
 
-                        case Mode is
-                           when Chase =>
+                     case State is
+                        when Zombie =>
+                           Mode := New_Mode;
+                           Choose_Random_Direction (Gen  => Generator,
+                                                    Cell => Board.Get_Cell (My_Colour),
+                                                    Dir  => Dir);
+                           Board.Make_Ghost_Move (My_Colour) (Dir);
 
-                              -- Inky
-                              -- Target the position that is pointed to by the vector between
-                              -- Blinky and the point 2 spots ahead of pacman doubled.
+                        when Alive =>
+                           if New_Mode /= Mode then
+                              Dir := Reverse_Direction (Dir);
+                              Mode := New_Mode;
+                           else
 
-                              declare
-                                 Player_Dir : constant Direction := Board.Get_Player_Heading;
-                                 Player_Pos : constant Coordinates := Next_Cell
-                                   (Next_Cell (Board.Get_Player_Pos, Player_Dir), Player_Dir);
+                              case Mode is
+                              when Chase =>
 
-                                 Blinkey_Pos : constant Coordinates := Board.Get_Ghost_Pos (Red);
+                                 -- Inky
+                                 -- Target the position that is pointed to by the vector between
+                                 -- Blinky and the point 2 spots ahead of pacman doubled.
 
-                                 Target_X : constant Integer := 2 * (Integer (Player_Pos.X) - Integer (Blinkey_Pos.X));
-                                 Target_Y : constant Integer := 2 * (Integer (Player_Pos.Y) - Integer (Blinkey_Pos.Y));
+                                 declare
+                                    Player_Dir : constant Direction := Board.Get_Player_Heading;
+                                    Player_Pos : constant Coordinates := Next_Cell
+                                      (Next_Cell (Board.Get_Player_Pos, Player_Dir), Player_Dir);
 
-                                 Target : constant Coordinates :=
-                                   (X => (if Target_X < Board_Width'First then Board_Width'First else
-                                              (if Target_X > Board_Width'Last then Board_Width'Last else Board_Width (Target_X))
-                                         ),
-                                    Y => (if Target_Y < Board_Height'First then Board_Height'First else
-                                              (if Target_Y > Board_Height'Last then Board_Height'Last else Board_Height (Target_Y))
-                                         )
-                                   );
-                              begin
+                                    Blinkey_Pos : constant Coordinates := Board.Get_Ghost_Pos (Red);
 
+                                    Target_X : constant Integer := 2 * (Integer (Player_Pos.X) - Integer (Blinkey_Pos.X));
+                                    Target_Y : constant Integer := 2 * (Integer (Player_Pos.Y) - Integer (Blinkey_Pos.Y));
+
+                                    Target : constant Coordinates :=
+                                      (X => (if Target_X < Board_Width'First then Board_Width'First else
+                                                 (if Target_X > Board_Width'Last then Board_Width'Last else Board_Width (Target_X))
+                                            ),
+                                       Y => (if Target_Y < Board_Height'First then Board_Height'First else
+                                                 (if Target_Y > Board_Height'Last then Board_Height'Last else Board_Height (Target_Y))
+                                            )
+                                      );
+                                 begin
+                                    -- Only use algorithm if Red is Alive.
+                                    if Board.Get_Ghost_State (Red) /= Dead then
+                                       Choose_Direction (Source    => Pos,
+                                                         Target    => Target,
+                                                         Cell      => Board.Get_Cell (My_Colour),
+                                                         Dir       => Dir);
+                                    else
+                                       Choose_Direction (Source    => Pos,
+                                                         Target    => Player_Pos,
+                                                         Cell      => Board.Get_Cell (My_Colour),
+                                                         Dir       => Dir);
+                                    end if;
+                                 end;
+
+                              when Scatter =>
                                  Choose_Direction (Source    => Pos,
-                                                   Target    => Target,
+                                                   Target    => Scatter_Point,
                                                    Cell      => Board.Get_Cell (My_Colour),
                                                    Dir       => Dir);
-                              end;
+                              end case;
+                           end if;
 
-                           when Scatter =>
-                              Choose_Direction (Source    => Pos,
-                                                Target    => Scatter_Point,
-                                                Cell      => Board.Get_Cell (My_Colour),
-                                                Dir       => Dir);
-                        end case;
-                     end if;
+                           Board.Make_Ghost_Move (My_Colour) (Dir);
 
-                     Board.Make_Ghost_Move (My_Colour) (Dir);
+                        when Dead => null;
+                     end case;
                   end select;
+
                exception
                   when Ghost_Render_Timeout =>
                      System_Mode := Safe_Mode;
@@ -161,5 +184,4 @@ package body Ghost_Pack.Blue_Ghost is
       Board.Set_Failure;
 
    end Blue_Ghost_Type;
-
 end Ghost_Pack.Blue_Ghost;

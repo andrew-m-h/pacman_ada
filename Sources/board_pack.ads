@@ -2,7 +2,7 @@ with Settings; use Settings;
 with Terminal_Interface.Curses; use Terminal_Interface.Curses;
 with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
 with Ada.Real_Time; use Ada.Real_Time;
-with Maze_Pack;
+with Maze_Pack; use type Maze_Pack.Cell_Contents;
 
 -- @summary
 -- Provide an interface for interacting synchronously with the screen.
@@ -112,6 +112,8 @@ package Board_Pack is
       -- Called from a Timing_Event object
       procedure Fruit_Timeout (Event : in out Timing_Event);
    private
+      procedure Check_Collision;
+
       Player : Player_Data;
       Player_Size : Token_Size := Large;
       Ghosts : Ghosts_Data;

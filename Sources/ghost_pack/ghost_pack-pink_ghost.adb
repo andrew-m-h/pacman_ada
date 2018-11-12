@@ -30,6 +30,8 @@ package body Ghost_Pack.Pink_Ghost is
             Min_Wait : constant Time := Ghost_Delay_Time + Ghost_Wait_Time;
             Deadline : constant Time := Ghost_Delay_Time + Ghost_Deadline;
          begin
+            Random_Direction.Reset (Generator);
+
             case System_Mode is
             when Safe_Mode =>
                null;
@@ -106,33 +108,43 @@ package body Ghost_Pack.Pink_Ghost is
                         Player_Dir : constant Direction := Board.Get_Player_Heading;
                      begin
 
-                        if New_Mode /= Mode then
-                           Dir := Reverse_Direction (Dir);
+                        case State is
+                        when Zombie =>
                            Mode := New_Mode;
-                        else
+                           Choose_Random_Direction (Gen  => Generator,
+                                                    Cell => Board.Get_Cell (My_Colour),
+                                                    Dir  => Dir);
+                           Board.Make_Ghost_Move (My_Colour) (Dir);
+                        when Alive =>
 
-                           case Mode is
-                           when Chase =>
+                           if New_Mode /= Mode then
+                              Dir := Reverse_Direction (Dir);
+                              Mode := New_Mode;
+                           else
 
-                              -- Calculate the tile four cells ahead of the player
-                              for I in Natural range 1 .. 4 loop
-                                 Target := Next_Cell (Target, Player_Dir);
-                              end loop;
+                              case Mode is
+                              when Chase =>
 
-                              Choose_Direction (Source    => Pos,
-                                                Target    => Target,
-                                                Cell      => Board.Get_Cell (My_Colour),
-                                                Dir       => Dir);
-                           when Scatter =>
-                              Choose_Direction (Source    => Pos,
-                                                Target    => Scatter_Point,
-                                                Cell      => Board.Get_Cell (My_Colour),
-                                                Dir       => Dir);
-                           end case;
-                        end if;
-                        Board.Make_Ghost_Move (My_Colour) (Dir);
+                                 -- Calculate the tile four cells ahead of the player
+                                 for I in Natural range 1 .. 4 loop
+                                    Target := Next_Cell (Target, Player_Dir);
+                                 end loop;
+
+                                 Choose_Direction (Source    => Pos,
+                                                   Target    => Target,
+                                                   Cell      => Board.Get_Cell (My_Colour),
+                                                   Dir       => Dir);
+                              when Scatter =>
+                                 Choose_Direction (Source    => Pos,
+                                                   Target    => Scatter_Point,
+                                                   Cell      => Board.Get_Cell (My_Colour),
+                                                   Dir       => Dir);
+                              end case;
+                           end if;
+                           Board.Make_Ghost_Move (My_Colour) (Dir);
+                        when Dead => null;
+                        end case;
                      end;
-
                   end select;
                exception
                   when Ghost_Render_Timeout =>
