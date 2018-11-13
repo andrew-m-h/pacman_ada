@@ -53,7 +53,7 @@ package Board_Pack is
    end record;
 
    -- The current state of the board is described by this enumeration
-   -- @value Uninitalised This is the initial value of the board state.
+   -- @value Uninitialised This is the initial value of the board state.
    -- It is unset upon successful completion of the board procedure Initialse
    -- @value Initialised This is the normal execution mode of the board
    -- @value  Failure This is set when an unrecoverable failure has occurred and
@@ -149,6 +149,7 @@ private
    Blue_Ghost_Colour : constant Color_Number := 174;
 
    subtype RGB_Colour is RGB_Value range 0 .. 1000;
+
    procedure Init_Colour (Colour : Color_Number;
                           R      : RGB_Colour;
                           G      : RGB_Colour;
@@ -159,7 +160,10 @@ private
                                                     Color => Color_Pair'First,
                                                     Attr => (others => False)
                                                    );
-
+   Ghost_Dead : constant Attributed_Character   := (Ch => '"',
+                                                    Color => Color_Pair'First,
+                                                    Attr => (others => False)
+                                                   );
    Pipe : constant Attributed_Character := (Ch => '|',
                                             Color => Color_Pair'First,
                                             Attr => (others => False)

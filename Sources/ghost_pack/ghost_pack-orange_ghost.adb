@@ -150,7 +150,16 @@ package body Ghost_Pack.Orange_Ghost is
 
                            Board.Make_Ghost_Move (My_Colour) (Dir);
 
-                        when Dead => null;
+                        when Dead =>
+                           if Pos = Revive_Point then
+                              Board.Set_Ghost_State (My_Colour) (Alive);
+                           else
+                              Choose_Direction (Source => Pos,
+                                                Target => Revive_Point,
+                                                Cell   => Board.Get_Cell (My_Colour),
+                                                Dir    => Dir);
+                              Board.Make_Ghost_Move (My_Colour) (Dir);
+                           end if;
                      end case;
                   end select;
                exception

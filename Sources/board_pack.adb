@@ -181,6 +181,7 @@ package body Board_Pack is
          case State is
             when Initialised =>
                Ghosts (G).State := S;
+               Ghosts (G).Symbol := (if S = Alive then Ghost_Symbol else Ghost_Dead);
             when others =>
                raise System_Failure;
          end case;
@@ -276,27 +277,25 @@ package body Board_Pack is
 
          -- Ghosts Moves
          for G in Ghost loop
-            if Ghosts (G).State /= Dead then
-
+            declare
+               Pos : constant Coordinates := Ghosts (G).Pos;
+            begin
+               -- Fill behind with appropriate character
                declare
-                  Pos : constant Coordinates := Ghosts (G).Pos;
+                  Fill_Char : Attributed_Character;
                begin
-                  -- Fill behind with appropriate character
-                  declare
-                     Fill_Char : Attributed_Character;
-                  begin
-                     case M.Cells (Pos.X, Pos.Y).Contents is
+                  case M.Cells (Pos.X, Pos.Y).Contents is
                      when Maze_Pack.None => Fill_Char := Space;
                      when Maze_Pack.Dot => Fill_Char := Dot;
                      when Maze_Pack.Pill => Fill_Char := Pill;
-                     end case;
-                     Add (Win    => Win,
-                          Line   => Line_Position (Ghosts (G).Pos.Y),
-                          Column => Column_Position (Ghosts (G).Pos.X),
-                          Ch     => Fill_Char);
-                  end;
+                  end case;
+                  Add (Win    => Win,
+                       Line   => Line_Position (Ghosts (G).Pos.Y),
+                       Column => Column_Position (Ghosts (G).Pos.X),
+                       Ch     => Fill_Char);
+               end;
 
-                  case Ghosts (G).Current_Direction is
+               case Ghosts (G).Current_Direction is
                   when Left =>
                      if M.Cells (Pos.X, Pos.Y).Left then
                         Ghosts (G).Pos.X := Ghosts (G).Pos.X - 1;
@@ -313,13 +312,13 @@ package body Board_Pack is
                      if M.Cells (Pos.X, Pos.Y).Down then
                         Ghosts (G).Pos.Y := Ghosts (G).Pos.Y + 1;
                      end if;
-                  end case;
-               end;
+               end case;
+            end;
 
-               declare
-                  Ghost_Char : Attributed_Character := Ghosts (G).Symbol;
-               begin
-                  case G is
+            declare
+               Ghost_Char : Attributed_Character := Ghosts (G).Symbol;
+            begin
+               case G is
                   when Settings.Red =>
                      Ghost_Char.Color := Colour_Pairs (Red_Ghost);
                   when Settings.Blue =>
@@ -328,22 +327,21 @@ package body Board_Pack is
                      Ghost_Char.Color := Colour_Pairs (Orange_Ghost);
                   when Settings.Pink =>
                      Ghost_Char.Color := Colour_Pairs (Pink_Ghost);
-                  end case;
+               end case;
 
-                  if Ghosts (G).State = Zombie then
-                     if Use_Colour then
-                        Ghost_Char.Color := Colour_Pairs (Zombie_Ghost);
-                     else
-                        Ghost_Char.Attr.Dim_Character := True;
-                     end if;
+               if Ghosts (G).State = Zombie then
+                  if Use_Colour then
+                     Ghost_Char.Color := Colour_Pairs (Zombie_Ghost);
+                  else
+                     Ghost_Char.Attr.Dim_Character := True;
                   end if;
+               end if;
 
-                  Add (Win    => W,
-                       Line   => Line_Position (Ghosts (G).Pos.Y),
-                       Column => Column_Position (Ghosts (G).Pos.X),
-                       Ch     => Ghost_Char);
-               end;
-            end if;
+               Add (Win    => W,
+                    Line   => Line_Position (Ghosts (G).Pos.Y),
+                    Column => Column_Position (Ghosts (G).Pos.X),
+                    Ch     => Ghost_Char);
+            end;
          end loop;
 
          Check_Collision;
@@ -381,6 +379,7 @@ package body Board_Pack is
                case Ghosts (G).State is
                when Zombie =>
                   Ghosts (G).State := Dead;
+                  Ghosts (G).Symbol := Ghost_Dead;
                   Add (Win    => W,
                        Line   => Line_Position (Ghosts (G).Pos.Y),
                        Column => Column_Position (Ghosts (G).Pos.X),

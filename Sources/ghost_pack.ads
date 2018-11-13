@@ -16,6 +16,8 @@ package Ghost_Pack is
    function Ghost_Tasks return Ghost_Array
      with Inline_Always;
 
+   Revive_Point : constant Coordinates := (X => 18, Y => 17);
+
 private
    -- Ghosts operate under real time constraint, missing a deadline shall send
    -- A ghost into Safe_Mode to handle system degredation
