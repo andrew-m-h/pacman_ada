@@ -234,11 +234,19 @@ package body Board_Pack is
          case Player.Current_Direction  is
             when Left =>
                if M.Cells (Player.Pos.X, Player.Pos.Y).Left then
-                  Player.Pos.X := Player.Pos.X - 1;
+                  if Player.Pos.X = Board_Width'First then
+                     Player.Pos.X := M.Maze_Width;
+                  else
+                     Player.Pos.X := Player.Pos.X - 1;
+                  end if;
                end if;
             when Right =>
                if M.Cells (Player.Pos.X, Player.Pos.Y).Right then
-                  Player.Pos.X := Player.Pos.X + 1;
+                  if Player.Pos.X = M.Maze_Width then
+                     Player.Pos.X := Board_Width'First;
+                  else
+                     Player.Pos.X := Player.Pos.X + 1;
+                  end if;
                end if;
             when Up =>
                if M.Cells (Player.Pos.X, Player.Pos.Y).Up then
@@ -298,11 +306,19 @@ package body Board_Pack is
                case Ghosts (G).Current_Direction is
                   when Left =>
                      if M.Cells (Pos.X, Pos.Y).Left then
-                        Ghosts (G).Pos.X := Ghosts (G).Pos.X - 1;
+                        if Ghosts (G).Pos.X = Board_Width'First then
+                           Ghosts (G).Pos.X := M.Maze_Width;
+                        else
+                           Ghosts (G).Pos.X := Ghosts (G).Pos.X - 1;
+                        end if;
                      end if;
                   when Right =>
                      if M.Cells (Pos.X, Pos.Y).Right then
-                        Ghosts (G).Pos.X := Ghosts (G).Pos.X + 1;
+                        if Ghosts (G).Pos.X = M.Maze_Width then
+                           Ghosts (G).Pos.X := Board_Width'First;
+                        else
+                           Ghosts (G).Pos.X := Ghosts (G).Pos.X + 1;
+                        end if;
                      end if;
                   when Up =>
                      if M.Cells (Pos.X, Pos.Y).Up then

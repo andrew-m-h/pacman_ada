@@ -57,18 +57,10 @@ package body Maze_Pack is
 
       for Y in Board_Height'First .. M.Maze_Height loop
          for X in Board_Width'First .. M.Maze_Width loop
-            M.Cells (X, Y) := (Up => (if Y > Board_Height'First then
-                                         not Is_Border_Char (M.Maze_Str (Y - 1)(X))
-                                      else False),
-                               Down => (if Y < M.Maze_Height then
-                                          not Is_Border_Char (M.Maze_Str (Y + 1)(X))
-                                        else False),
-                               Left => (if X > Board_Width'First then
-                                          not Is_Border_Char (M.Maze_Str (Y) (X - 1))
-                                        else False),
-                               Right => (if X < M.Maze_Width then
-                                           not Is_Border_Char (M.Maze_Str (Y) (X + 1))
-                                         else False),
+            M.Cells (X, Y) := (Up => (Y > Board_Height'First and then not Is_Border_Char (M.Maze_Str (Y - 1)(X))),
+                               Down => (Y < M.Maze_Height and then not Is_Border_Char (M.Maze_Str (Y + 1)(X))),
+                               Left => (X = Board_Width'First or else not Is_Border_Char (M.Maze_Str (Y) (X - 1))),
+                               Right => (X = M.Maze_Width or else not Is_Border_Char (M.Maze_Str (Y) (X + 1))),
                                Contents => Get_Contents (M.Maze_Str (Y) (X))
                               );
          end loop;
