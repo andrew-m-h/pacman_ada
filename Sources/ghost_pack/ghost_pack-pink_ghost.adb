@@ -62,36 +62,11 @@ package body Ghost_Pack.Pink_Ghost is
                      end select;
                   end loop Service_Loop;
 
-                  -- Check state from board (set zombie timer if needed)
-                  declare
-                     New_State : constant Ghost_State := Board.Get_Ghost_State (My_Colour);
-                     Did_Cancel : Boolean; pragma Unreferenced (Did_Cancel);
-                  begin
-                     if New_State /= State then
-                        case New_State is
-                           when Zombie =>
-                              Set_Handler (Event   => Zombie_Timer,
-                                           In_Time => Zombie_Time_Out,
-                                           Handler => Handler);
-                           when Dead =>
-                              Cancel_Handler (Event     => Zombie_Timer,
-                                              Cancelled => Did_Cancel);
-                           when others => null;
-                        end case;
-                     end if;
-                     State := New_State;
-                  end;
-
-                  declare
-                     Zombie_Timeout_Happened : Boolean := False;
-                  begin
-                     Zombie_Handler.Check (Zombie_Timeout_Happened);
-
-                     if State = Zombie and then Zombie_Timeout_Happened then
-                        State := Alive;
-                        Board.Set_Ghost_State (My_Colour) (Alive);
-                     end if;
-                  end;
+                  Check_Board_State (My_Colour      => My_Colour,
+                                     State          => State,
+                                     Zombie_Handler => Zombie_Handler,
+                                     Zombie_Timer   => Zombie_Timer,
+                                     Handler        => Handler);
 
                   Pos := Board.Get_Ghost_Pos (My_Colour);
 

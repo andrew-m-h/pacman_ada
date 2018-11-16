@@ -49,6 +49,12 @@ private
 
    Zombie_Time_Out : constant Time_Span := Render_Time * 30;
 
+   procedure Check_Board_State (My_Colour : Ghost;
+                                State : in out Ghost_State;
+                                Zombie_Handler : in out Zombie_Handler_Type;
+                                Zombie_Timer : in out Timing_Event;
+                                Handler : Timing_Event_Handler);
+
    -- Return square of euclidian distance between two coordinates
    -- Many ghost algorithms require taking the shortest euclidian distance
    -- and this can be efficiantly calculated without using square roots

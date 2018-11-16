@@ -3,6 +3,8 @@ with Ghost_Pack.Blue_Ghost;
 with Ghost_Pack.Orange_Ghost;
 with Ghost_Pack.Pink_Ghost;
 
+with Board_Pack; use Board_Pack;
+
 package body Ghost_Pack is
 
    function Ghost_Tasks return Ghost_Array is ((Red => Ghost_Pack.Red_Ghost.Red_Ghost_Task'Access,
@@ -24,6 +26,40 @@ package body Ghost_Pack is
          Timeout_Occurred := True;
       end Handler;
    end Zombie_Handler_Type;
+
+   procedure Check_Board_State (My_Colour : Ghost;
+                                State : in out Ghost_State;
+                                Zombie_Handler : in out Zombie_Handler_Type;
+                                Zombie_Timer : in out Timing_Event;
+                                Handler : Timing_Event_Handler) is
+
+      New_State : constant Ghost_State := Board.Get_Ghost_State (My_Colour);
+      Did_Cancel : Boolean; pragma Unreferenced (Did_Cancel);
+
+      Zombie_Timeout_Happened : Boolean;
+   begin
+      if New_State /= State then
+         case New_State is
+            when Zombie =>
+               Set_Handler (Event   => Zombie_Timer,
+                            In_Time => Zombie_Time_Out,
+                            Handler => Handler);
+            when Dead =>
+               Cancel_Handler (Event     => Zombie_Timer,
+                               Cancelled => Did_Cancel);
+            when others => null;
+         end case;
+      end if;
+      State := New_State;
+
+      Zombie_Handler.Check (Zombie_Timeout_Happened);
+
+      if State = Zombie and then Zombie_Timeout_Happened then
+         State := Alive;
+         Board.Set_Ghost_State (My_Colour) (Alive);
+      end if;
+
+   end Check_Board_State;
 
    function Distance_Square (A, B : Coordinates) return Natural is
       DX : constant Integer := Integer (A.X) - Integer (B.X);
