@@ -49,7 +49,7 @@ package Board_Pack is
    type Fruit_Type is record
       Ch : Attributed_Character;
       Timeout : Time_Span;
-      Value : Score := Score'First;
+      Value : Score := 1;
       Pos : Coordinates;
    end record;
 
@@ -66,6 +66,14 @@ package Board_Pack is
    subtype Token_Size is Boolean;
    Small : constant Token_Size := Token_Size'First;
    Large : constant Token_Size := not Small;
+
+   type Cell_To_Wipe is record
+      Do_Wipe : Boolean;
+      Pos : Coordinates;
+      Length : Natural;
+   end record;
+   type Wipe_Entry is (Wipe_Red, Wipe_Blue, Wipe_Orange, Wipe_Pink, Wipe_Fruit);
+   type Cells_To_Wipe is array (Wipe_Entry) of Cell_To_Wipe;
 
    -- Protected object providing synchronous access to the board to be shown on screen
    protected Board is
@@ -116,6 +124,7 @@ package Board_Pack is
       procedure Check_Collision;
 
       Player : Player_Data;
+      Player_Score : Score := Score'First;
       Player_Size : Token_Size := Large;
       Ghosts : Ghosts_Data;
       Fruit  : Fruit_Type;
@@ -123,6 +132,13 @@ package Board_Pack is
       W : Window := Standard_Window;
       M : Maze_Pack.Maze;
       State : Board_State := Uninitialised;
+      -- The render cycle can be 'paused' until
+      -- Pause_Countdown = 0
+      Pause_Countdown : Natural := Natural'First;
+      Wipe_Callback : Cells_To_Wipe
+        := (others => (Do_Wipe => False,
+                       Pos => (Board_Width'First, Board_Height'First),
+                       Length => 0));
    end Board;
 
 private
@@ -156,6 +172,8 @@ private
                           G      : RGB_Colour;
                           B      : RGB_Colour)
      with Inline_Always;
+
+   Null_Str : constant String (1 .. 10) := (others => ' ');
 
    Ghost_Symbol : constant Attributed_Character := (Ch => 'A',
                                                     Color => Color_Pair'First,

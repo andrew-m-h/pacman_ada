@@ -74,7 +74,11 @@ package body Ghost_Pack.Blue_Ghost is
                   -- Perform Direction Calculation
                   select
                      delay until Deadline;
-                     raise Ghost_Render_Timeout;
+                     select
+                        Board.Make_Ghost_Move (My_Colour) (Dir);
+                     else
+                        null;
+                     end select;
                   then abort
 
                      case State is

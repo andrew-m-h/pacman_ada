@@ -199,38 +199,60 @@ package body Board_Pack is
 
          if State = Failure then
             raise System_Failure;
-         end if;
+            -- When paused to eat a fruit, erase the score
+         elsif Pause_Countdown > Natural'First then
+            Pause_Countdown := Natural'Pred (Pause_Countdown);
+         else
+            -- Check the Wipe_Callbacks for any scores which need
+            -- clearing
+            for I in Wipe_Entry loop
+               if Wipe_Callback (I).Do_Wipe then
+                  declare
+                     X : constant Board_Width := Wipe_Callback (I).Pos.X;
+                     Y : constant Board_Height := Wipe_Callback (I).Pos.Y;
+                     Wipe_Str : constant String := M.Maze_Str (Y)(X .. Board_Width'Last);
+                  begin
+                     Add (Win    => W,
+                          Line   => Line_Position (Wipe_Callback (I).Pos.Y),
+                          Column => Column_Position (Wipe_Callback (I).Pos.X),
+                          Str    => Wipe_Str,
+                          Len    => Wipe_Callback (I).Length
+                         );
+                     Wipe_Callback (I).Do_Wipe := False;
+                  end;
+               end if;
+            end loop;
 
-         -- Add 'space' where player character is (removing from board)
-         Add (Win    => W,
-              Line   => Line_Position (Player.Pos.Y),
-              Column => Column_Position (Player.Pos.X),
-              Ch     => Space);
+            -- Add 'space' where player character is (removing from board)
+            Add (Win    => W,
+                 Line   => Line_Position (Player.Pos.Y),
+                 Column => Column_Position (Player.Pos.X),
+                 Ch     => Space);
 
-         -- Next_Direction shall only be taken if available, otherwise
-         -- Player will stay on current trajectory.
-         if Player.Next_Direction /= Player.Current_Direction then
-            case Player.Next_Direction  is
-            when Left =>
-               if M.Cells (Player.Pos.X, Player.Pos.Y).Left then
-                  Player.Current_Direction := Player.Next_Direction;
-               end if;
-            when Right =>
-               if M.Cells (Player.Pos.X, Player.Pos.Y).Right then
-                  Player.Current_Direction := Player.Next_Direction;
-               end if;
-            when Up =>
-               if M.Cells (Player.Pos.X, Player.Pos.Y).Up then
-                  Player.Current_Direction := Player.Next_Direction;
-               end if;
-            when Down =>
-               if M.Cells (Player.Pos.X, Player.Pos.Y).Down then
-                  Player.Current_Direction := Player.Next_Direction;
-               end if;
-            end case;
-         end if;
+            -- Next_Direction shall only be taken if available, otherwise
+            -- Player will stay on current trajectory.
+            if Player.Next_Direction /= Player.Current_Direction then
+               case Player.Next_Direction  is
+               when Left =>
+                  if M.Cells (Player.Pos.X, Player.Pos.Y).Left then
+                     Player.Current_Direction := Player.Next_Direction;
+                  end if;
+               when Right =>
+                  if M.Cells (Player.Pos.X, Player.Pos.Y).Right then
+                     Player.Current_Direction := Player.Next_Direction;
+                  end if;
+               when Up =>
+                  if M.Cells (Player.Pos.X, Player.Pos.Y).Up then
+                     Player.Current_Direction := Player.Next_Direction;
+                  end if;
+               when Down =>
+                  if M.Cells (Player.Pos.X, Player.Pos.Y).Down then
+                     Player.Current_Direction := Player.Next_Direction;
+                  end if;
+               end case;
+            end if;
 
-         case Player.Current_Direction  is
+            case Player.Current_Direction  is
             when Left =>
                if M.Cells (Player.Pos.X, Player.Pos.Y).Left then
                   if Player.Pos.X = Board_Width'First then
@@ -255,54 +277,54 @@ package body Board_Pack is
                if M.Cells (Player.Pos.X, Player.Pos.Y).Down then
                   Player.Pos.Y := Player.Pos.Y + 1;
                end if;
-         end case;
+            end case;
 
-         -- Redraw Pacman Character sprite
-         declare
-            Player_Char : constant Attributed_Character :=
-              (if Player_Size = Small then Pacman_Small else Pacman_Large);
-         begin
-            Add (Win    => W,
-                 Line   => Line_Position (Player.Pos.Y),
-                 Column => Column_Position (Player.Pos.X),
-                 Ch     => Player_Char);
-         end;
-         Player_Size := not Player_Size;
-
-         -- Appropriately Eat Dots / Pills
-         if M.Cells (Player.Pos.X, Player.Pos.Y).Contents = Maze_Pack.Pill then
-            for G in Ghost loop
-               if Ghosts (G).State = Alive then
-                  Ghosts (G).State := Zombie;
-               end if;
-            end loop;
-         end if;
-
-         M.Cells (Player.Pos.X, Player.Pos.Y).Contents := Maze_Pack.None;
-
-         Check_Collision;
-
-         -- Ghosts Moves
-         for G in Ghost loop
+            -- Redraw Pacman Character sprite
             declare
-               Pos : constant Coordinates := Ghosts (G).Pos;
+               Player_Char : constant Attributed_Character :=
+                 (if Player_Size = Small then Pacman_Small else Pacman_Large);
             begin
-               -- Fill behind with appropriate character
+               Add (Win    => W,
+                    Line   => Line_Position (Player.Pos.Y),
+                    Column => Column_Position (Player.Pos.X),
+                    Ch     => Player_Char);
+            end;
+            Player_Size := not Player_Size;
+
+            -- Appropriately Eat Dots / Pills
+            if M.Cells (Player.Pos.X, Player.Pos.Y).Contents = Maze_Pack.Pill then
+               for G in Ghost loop
+                  if Ghosts (G).State = Alive then
+                     Ghosts (G).State := Zombie;
+                  end if;
+               end loop;
+            end if;
+
+            M.Cells (Player.Pos.X, Player.Pos.Y).Contents := Maze_Pack.None;
+
+            Check_Collision;
+
+            -- Ghosts Moves
+            for G in Ghost loop
                declare
-                  Fill_Char : Attributed_Character;
+                  Pos : constant Coordinates := Ghosts (G).Pos;
                begin
-                  case M.Cells (Pos.X, Pos.Y).Contents is
+                  -- Fill behind with appropriate character
+                  declare
+                     Fill_Char : Attributed_Character;
+                  begin
+                     case M.Cells (Pos.X, Pos.Y).Contents is
                      when Maze_Pack.None => Fill_Char := Space;
                      when Maze_Pack.Dot => Fill_Char := Dot;
                      when Maze_Pack.Pill => Fill_Char := Pill;
-                  end case;
-                  Add (Win    => Win,
-                       Line   => Line_Position (Ghosts (G).Pos.Y),
-                       Column => Column_Position (Ghosts (G).Pos.X),
-                       Ch     => Fill_Char);
-               end;
+                     end case;
+                     Add (Win    => Win,
+                          Line   => Line_Position (Ghosts (G).Pos.Y),
+                          Column => Column_Position (Ghosts (G).Pos.X),
+                          Ch     => Fill_Char);
+                  end;
 
-               case Ghosts (G).Current_Direction is
+                  case Ghosts (G).Current_Direction is
                   when Left =>
                      if M.Cells (Pos.X, Pos.Y).Left then
                         if Ghosts (G).Pos.X = Board_Width'First then
@@ -327,13 +349,13 @@ package body Board_Pack is
                      if M.Cells (Pos.X, Pos.Y).Down then
                         Ghosts (G).Pos.Y := Ghosts (G).Pos.Y + 1;
                      end if;
-               end case;
-            end;
+                  end case;
+               end;
 
-            declare
-               Ghost_Char : Attributed_Character := Ghosts (G).Symbol;
-            begin
-               case G is
+               declare
+                  Ghost_Char : Attributed_Character := Ghosts (G).Symbol;
+               begin
+                  case G is
                   when Settings.Red =>
                      Ghost_Char.Color := Colour_Pairs (Red_Ghost);
                   when Settings.Blue =>
@@ -342,48 +364,61 @@ package body Board_Pack is
                      Ghost_Char.Color := Colour_Pairs (Orange_Ghost);
                   when Settings.Pink =>
                      Ghost_Char.Color := Colour_Pairs (Pink_Ghost);
-               end case;
+                  end case;
 
-               if Ghosts (G).State = Zombie then
-                  if Use_Colour then
-                     Ghost_Char.Color := Colour_Pairs (Zombie_Ghost);
-                  else
-                     Ghost_Char.Attr.Dim_Character := True;
+                  if Ghosts (G).State = Zombie then
+                     if Use_Colour then
+                        Ghost_Char.Color := Colour_Pairs (Zombie_Ghost);
+                     else
+                        Ghost_Char.Attr.Dim_Character := True;
+                     end if;
                   end if;
-               end if;
 
-               Add (Win    => W,
-                    Line   => Line_Position (Ghosts (G).Pos.Y),
-                    Column => Column_Position (Ghosts (G).Pos.X),
-                    Ch     => Ghost_Char);
-            end;
-         end loop;
+                  Add (Win    => W,
+                       Line   => Line_Position (Ghosts (G).Pos.Y),
+                       Column => Column_Position (Ghosts (G).Pos.X),
+                       Ch     => Ghost_Char);
+               end;
+            end loop;
 
-         Check_Collision;
+            Check_Collision;
 
-         -- Check the fruit event handler if necessary
-         if Fruit_Valid then
-            if Player.Pos = Fruit.Pos then
-               declare
-                  Cancel_Successful : Boolean; pragma Unreferenced (Cancel_Successful);
-               begin
-                  Cancel_Handler (Event     => Fruit_Timer,
-                                  Cancelled => Cancel_Successful);
+            -- Check the fruit event handler if necessary
+            if Fruit_Valid then
+               if Player.Pos = Fruit.Pos then
+                  declare
+                     Cancel_Successful : Boolean; pragma Unreferenced (Cancel_Successful);
+                     Score_Str : constant String := Score'Image (Fruit.Value);
+                  begin
+                     Cancel_Handler (Event     => Fruit_Timer,
+                                     Cancelled => Cancel_Successful);
+
+                     Add (Win    => W,
+                          Line   => Line_Position (Fruit.Pos.Y),
+                          Column => Column_Position (Fruit.Pos.X - 1),
+                          Str    => Score_Str,
+                          Len    => Score_Str'Length);
+
+                     Wipe_Callback (Wipe_Fruit) := (Do_Wipe => True,
+                                                    Pos => Fruit.Pos,
+                                                    Length => Score_Str'Length);
+
+                     Fruit.Value := Fruit.Value * 2;
+                     Fruit_Valid := False;
+
+                     Pause_Countdown := 6;
+                  end;
+               else
                   Add (Win    => W,
                        Line   => Line_Position (Fruit.Pos.Y),
                        Column => Column_Position (Fruit.Pos.X),
-                       Ch     => Space);
-                  Fruit_Valid := False;
-               end;
-            else
-               Add (Win    => W,
-                    Line   => Line_Position (Fruit.Pos.Y),
-                    Column => Column_Position (Fruit.Pos.X),
-                    Ch     => Fruit.Ch);
+                       Ch     => Fruit.Ch);
+               end if;
             end if;
+
+            Redraw (W);
          end if;
 
-         Redraw (W);
       end Render;
 
       procedure Check_Collision is
@@ -395,10 +430,29 @@ package body Board_Pack is
                when Zombie =>
                   Ghosts (G).State := Dead;
                   Ghosts (G).Symbol := Ghost_Dead;
-                  Add (Win    => W,
-                       Line   => Line_Position (Ghosts (G).Pos.Y),
-                       Column => Column_Position (Ghosts (G).Pos.X),
-                       Ch     => Pacman_Large);
+
+                  declare
+                     Score_Str : constant String := "YUM!";
+                     Wiper : constant Cell_To_Wipe := (Do_Wipe => True,
+                                                       Pos     => Player.Pos,
+                                                       Length  => Score_Str'Length);
+                  begin
+                     Add (Win    => W,
+                          Line   => Line_Position (Ghosts (G).Pos.Y),
+                          Column => Column_Position (Ghosts (G).Pos.X),
+                          Str    => Score_Str,
+                          Len    => Score_Str'Length
+                         );
+                     case G is
+                     when Settings.Red => Wipe_Callback (Wipe_Red) := Wiper;
+                     when Settings.Blue => Wipe_Callback (Wipe_Blue) := Wiper;
+                     when Settings.Pink => Wipe_Callback (Wipe_Pink) := Wiper;
+                     when Settings.Orange => Wipe_Callback (Wipe_Orange) := Wiper;
+                     end case;
+
+                     Pause_Countdown := 6;
+                  end;
+
                when Alive =>
                   raise System_Failure;
                when Dead => null;

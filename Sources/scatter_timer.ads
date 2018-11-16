@@ -10,6 +10,7 @@ with Settings; use Settings;
 -- This package should be included by Main and provides a concrete timer
 -- to do the mode changes.
 package Scatter_Timer is
+   pragma Elaborate_Body;
 
    -- The schedule of the Scatter - Chase modes for each ghost.
    Schedule : constant array (Positive range <>) of Time_Span :=
