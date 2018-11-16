@@ -1,6 +1,6 @@
 with Board_Pack; use Board_Pack;
 
-package body Ghost_Pack_Util is
+package body Ghost_Pack.Util is
 
    protected body Zombie_Handler_Type is
       procedure Check (Happened : out Boolean) is
@@ -120,4 +120,4 @@ package body Ghost_Pack_Util is
       end if;
    end Choose_Random_Direction;
 
-end Ghost_Pack_Util;
+end Ghost_Pack.Util;

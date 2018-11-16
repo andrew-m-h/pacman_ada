@@ -1,4 +1,4 @@
-with Ghost_Pack_Util; use Ghost_Pack_Util;
+with Ghost_Pack.Util; use Ghost_Pack.Util;
 with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
 
 private package Ghost_Pack.Red_Ghost is

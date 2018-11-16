@@ -23,7 +23,7 @@ procedure Main is
    F : constant Board_Pack.Fruit_Type := (Ch => Fruit_Symbol,
                                           Timeout => Render_Time * 200,
                                           Value => Score'First,
-                                          Pos => (18, 22)
+                                          Pos => (18, 23)
                                          );
 begin
 

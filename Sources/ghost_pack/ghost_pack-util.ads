@@ -2,9 +2,12 @@ with Ada.Real_Time; use Ada.Real_Time;
 with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
 with Ada.Numerics.Discrete_Random;
 with Maze_Pack; use Maze_Pack;
-with Settings; use Settings;
 
-private package Ghost_Pack_Util is
+private package Ghost_Pack.Util is
+   -- The static elaboration checks fail to identify
+   -- that Util does NOT depend upon Ghost_Pack. However
+   -- it rightly sits inside the ghost_pack sub-pacakges
+   pragma Suppress (Elaboration_Check, Ghost_Pack.Util);
 
    package Random_Direction is new Ada.Numerics.Discrete_Random (Direction);
 
@@ -60,4 +63,4 @@ private package Ghost_Pack_Util is
 
    procedure Choose_Random_Direction (Gen : Random_Direction.Generator; Cell : Maze_Cell; Dir : in out Direction);
 
-end Ghost_Pack_Util;
+end Ghost_Pack.Util;

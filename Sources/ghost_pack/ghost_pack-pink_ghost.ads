@@ -1,5 +1,5 @@
 with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
-with Ghost_Pack_Util; use Ghost_Pack_Util;
+with Ghost_Pack.Util; use Ghost_Pack.Util;
 
 private package Ghost_Pack.Pink_Ghost is
 
