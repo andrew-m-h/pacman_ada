@@ -1,3 +1,4 @@
+with Ada.Real_Time; use Ada.Real_Time;
 with Board_Pack; use Board_Pack;
 
 package body Ghost_Pack.Orange_Ghost is

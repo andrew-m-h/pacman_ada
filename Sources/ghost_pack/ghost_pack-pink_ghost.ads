@@ -1,3 +1,6 @@
+with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
+with Ghost_Pack_Util; use Ghost_Pack_Util;
+
 private package Ghost_Pack.Pink_Ghost is
 
    task type Pink_Ghost_Type is new Ghost_Interface with

@@ -12,6 +12,7 @@ with Maze_Pack; use type Maze_Pack.Cell_Contents;
 -- the board to the screen every 'Render_Time'
 
 package Board_Pack is
+   pragma Elaborate_Body;
 
    -- Record describing the state of the player 'Pac Man' character on the board
    -- @field Pos The position of the player on the board
@@ -130,7 +131,7 @@ private
       pragma Priority (10);
    end Render;
 
-   Use_Colour : Boolean;
+   Use_Colour : Boolean := Boolean'Invalid_Value;
 
    type Symbol_Colour is (Player_Colour, Red_Ghost,
                           Blue_Ghost, Orange_Ghost,

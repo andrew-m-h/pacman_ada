@@ -1,5 +1,4 @@
 package body Board_Pack is
-
    ---------------------
    -- Render Task --
    ---------------------
