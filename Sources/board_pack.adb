@@ -205,23 +205,7 @@ package body Board_Pack is
          else
             -- Check the Wipe_Callbacks for any scores which need
             -- clearing
-            for I in Wipe_Entry loop
-               if Wipe_Callback (I).Do_Wipe then
-                  declare
-                     X : constant Board_Width := Wipe_Callback (I).Pos.X;
-                     Y : constant Board_Height := Wipe_Callback (I).Pos.Y;
-                     Wipe_Str : constant String := M.Maze_Str (Y)(X .. Board_Width'Last);
-                  begin
-                     Add (Win    => W,
-                          Line   => Line_Position (Wipe_Callback (I).Pos.Y),
-                          Column => Column_Position (Wipe_Callback (I).Pos.X),
-                          Str    => Wipe_Str,
-                          Len    => Wipe_Callback (I).Length
-                         );
-                     Wipe_Callback (I).Do_Wipe := False;
-                  end;
-               end if;
-            end loop;
+            Check_Wipes (W, M, Callbacks);
 
             -- Add 'space' where player character is (removing from board)
             Add (Win    => W,
@@ -389,19 +373,17 @@ package body Board_Pack is
                   declare
                      Cancel_Successful : Boolean; pragma Unreferenced (Cancel_Successful);
                      Score_Str : constant String := Score'Image (Fruit.Value);
+                     CB : Score_Callback := (Action => Write,
+                                             Pos    => Fruit.Pos,
+                                             Str    => (others => ' '),
+                                             Length => Score_Str'Length);
                   begin
                      Cancel_Handler (Event     => Fruit_Timer,
                                      Cancelled => Cancel_Successful);
 
-                     Add (Win    => W,
-                          Line   => Line_Position (Fruit.Pos.Y),
-                          Column => Column_Position (Fruit.Pos.X - 1),
-                          Str    => Score_Str,
-                          Len    => Score_Str'Length);
-
-                     Wipe_Callback (Wipe_Fruit) := (Do_Wipe => True,
-                                                    Pos => Fruit.Pos,
-                                                    Length => Score_Str'Length);
+                     CB.Str (1 .. Score_Str'Length) := Score_Str;
+                     CB.Pos.X := CB.Pos.X - 1;
+                     Callbacks (Score_Fruit) := CB;
 
                      Fruit.Value := Fruit.Value * 2;
                      Fruit_Valid := False;
@@ -415,6 +397,8 @@ package body Board_Pack is
                        Ch     => Fruit.Ch);
                end if;
             end if;
+
+            Check_Writes (W, Callbacks);
 
             Redraw (W);
          end if;
@@ -433,21 +417,18 @@ package body Board_Pack is
 
                   declare
                      Score_Str : constant String := "YUM!";
-                     Wiper : constant Cell_To_Wipe := (Do_Wipe => True,
-                                                       Pos     => Player.Pos,
-                                                       Length  => Score_Str'Length);
+                     CB : Score_Callback := (Action => Write,
+                                             Pos    => Player.Pos,
+                                             Str    => (others => ' '),
+                                             Length => Score_Str'Length);
                   begin
-                     Add (Win    => W,
-                          Line   => Line_Position (Ghosts (G).Pos.Y),
-                          Column => Column_Position (Ghosts (G).Pos.X),
-                          Str    => Score_Str,
-                          Len    => Score_Str'Length
-                         );
+                     CB.Str (1 .. Score_Str'Length) := Score_Str;
+
                      case G is
-                     when Settings.Red => Wipe_Callback (Wipe_Red) := Wiper;
-                     when Settings.Blue => Wipe_Callback (Wipe_Blue) := Wiper;
-                     when Settings.Pink => Wipe_Callback (Wipe_Pink) := Wiper;
-                     when Settings.Orange => Wipe_Callback (Wipe_Orange) := Wiper;
+                     when Settings.Red    => Callbacks (Score_Red) := CB;
+                     when Settings.Blue   => Callbacks (Score_Blue) := CB;
+                     when Settings.Pink   => Callbacks (Score_Pink) := CB;
+                     when Settings.Orange => Callbacks (Score_Orange) := CB;
                      end case;
 
                      Pause_Countdown := 6;

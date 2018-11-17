@@ -3,6 +3,7 @@ with Terminal_Interface.Curses; use Terminal_Interface.Curses;
 with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
 with Ada.Real_Time; use Ada.Real_Time;
 with Maze_Pack; use type Maze_Pack.Cell_Contents;
+with Board_Pack_Scores; use Board_Pack_Scores;
 
 -- @summary
 -- Provide an interface for interacting synchronously with the screen.
@@ -67,14 +68,6 @@ package Board_Pack is
    Small : constant Token_Size := Token_Size'First;
    Large : constant Token_Size := not Small;
 
-   type Cell_To_Wipe is record
-      Do_Wipe : Boolean;
-      Pos : Coordinates;
-      Length : Natural;
-   end record;
-   type Wipe_Entry is (Wipe_Red, Wipe_Blue, Wipe_Orange, Wipe_Pink, Wipe_Fruit);
-   type Cells_To_Wipe is array (Wipe_Entry) of Cell_To_Wipe;
-
    -- Protected object providing synchronous access to the board to be shown on screen
    protected Board is
       -- Execute various screen setup procedures.
@@ -135,10 +128,12 @@ package Board_Pack is
       -- The render cycle can be 'paused' until
       -- Pause_Countdown = 0
       Pause_Countdown : Natural := Natural'First;
-      Wipe_Callback : Cells_To_Wipe
-        := (others => (Do_Wipe => False,
+      Callbacks : Score_Callbacks
+        := (others => (Action => Nothing,
                        Pos => (Board_Width'First, Board_Height'First),
-                       Length => 0));
+                       Str => (others => ' '),
+                       Length => Natural'First
+                      ));
    end Board;
 
 private
