@@ -208,10 +208,16 @@ package body Board_Pack is
             Check_Wipes (W, M, Callbacks);
 
             -- Add 'space' where player character is (removing from board)
-            Add (Win    => W,
-                 Line   => Line_Position (Player.Pos.Y),
-                 Column => Column_Position (Player.Pos.X),
-                 Ch     => Space);
+--              Add (Win    => W,
+--                   Line   => Line_Position (Player.Pos.Y),
+--                   Column => Column_Position (Player.Pos.X),
+--                   Ch     => Space);
+            Writer_Pack.Add (W      => W,
+                             Line   => Line_Position (Player.Pos.Y),
+                             Column => Column_Position (Player.Pos.X),
+                             Ch     => Space,
+                             P      => Space_Priority,
+                             Wt     => Wt);
 
             -- Next_Direction shall only be taken if available, otherwise
             -- Player will stay on current trajectory.
@@ -268,10 +274,16 @@ package body Board_Pack is
                Player_Char : constant Attributed_Character :=
                  (if Player_Size = Small then Pacman_Small else Pacman_Large);
             begin
-               Add (Win    => W,
-                    Line   => Line_Position (Player.Pos.Y),
-                    Column => Column_Position (Player.Pos.X),
-                    Ch     => Player_Char);
+--                 Add (Win    => W,
+--                      Line   => Line_Position (Player.Pos.Y),
+--                      Column => Column_Position (Player.Pos.X),
+--                      Ch     => Player_Char);
+               Writer_Pack.Add (W      => W,
+                                Line   => Line_Position (Player.Pos.Y),
+                                Column => Column_Position (Player.Pos.X),
+                                Ch     => Player_Char,
+                                P      => Player_Priority,
+                                Wt     => Wt);
             end;
             Player_Size := not Player_Size;
 
@@ -302,10 +314,16 @@ package body Board_Pack is
                      when Maze_Pack.Dot => Fill_Char := Dot;
                      when Maze_Pack.Pill => Fill_Char := Pill;
                      end case;
-                     Add (Win    => Win,
-                          Line   => Line_Position (Ghosts (G).Pos.Y),
-                          Column => Column_Position (Ghosts (G).Pos.X),
-                          Ch     => Fill_Char);
+--                       Add (Win    => Win,
+--                            Line   => Line_Position (Ghosts (G).Pos.Y),
+--                            Column => Column_Position (Ghosts (G).Pos.X),
+--                            Ch     => Fill_Char);
+                     Writer_Pack.Add (W      => W,
+                                      Line   => Line_Position (Ghosts (G).Pos.Y),
+                                      Column => Column_Position (Ghosts (G).Pos.X),
+                                      Ch     => Fill_Char,
+                                      P      => Space_Priority,
+                                      Wt     => Wt);
                   end;
 
                   case Ghosts (G).Current_Direction is
@@ -338,14 +356,18 @@ package body Board_Pack is
 
                declare
                   Ghost_Char : Attributed_Character := Ghosts (G).Symbol;
+                  P : Priority := Ghost_Priority;
                begin
                   case G is
                   when Settings.Red =>
                      Ghost_Char.Color := Colour_Pairs (Red_Ghost);
+                     P := P + 3;
                   when Settings.Blue =>
                      Ghost_Char.Color := Colour_Pairs (Blue_Ghost);
+                     P := P + 2;
                   when Settings.Orange =>
                      Ghost_Char.Color := Colour_Pairs (Orange_Ghost);
+                     P := P + 1;
                   when Settings.Pink =>
                      Ghost_Char.Color := Colour_Pairs (Pink_Ghost);
                   end case;
@@ -358,10 +380,12 @@ package body Board_Pack is
                      end if;
                   end if;
 
-                  Add (Win    => W,
-                       Line   => Line_Position (Ghosts (G).Pos.Y),
-                       Column => Column_Position (Ghosts (G).Pos.X),
-                       Ch     => Ghost_Char);
+                  Writer_Pack.Add (W      => W,
+                                   Line   => Line_Position (Ghosts (G).Pos.Y),
+                                   Column => Column_Position (Ghosts (G).Pos.X),
+                                   Ch     => Ghost_Char,
+                                   P      => P,
+                                   Wt     => Wt);
                end;
             end loop;
 
@@ -391,12 +415,16 @@ package body Board_Pack is
                      Pause_Countdown := 6;
                   end;
                else
-                  Add (Win    => W,
-                       Line   => Line_Position (Fruit.Pos.Y),
-                       Column => Column_Position (Fruit.Pos.X),
-                       Ch     => Fruit.Ch);
+                  Writer_Pack.Add (W      => W,
+                                   Line   => Line_Position (Fruit.Pos.Y),
+                                   Column => Column_Position (Fruit.Pos.X),
+                                   Ch     => Fruit.Ch,
+                                   P      => Fruit_Priority,
+                                   Wt     => Wt);
                end if;
             end if;
+
+            Perform_Writes (Wt);
 
             Check_Writes (W, Callbacks);
 
@@ -435,6 +463,14 @@ package body Board_Pack is
                   end;
 
                when Alive =>
+                  Writer_Pack.Add (W      => W,
+                                   Line   => Line_Position (Ghosts (G).Pos.Y),
+                                   Column => Column_Position (Ghosts (G).Pos.X),
+                                   Ch     => Death,
+                                   P      => 22,
+                                   Wt     => Wt);
+                  Perform_Writes (Wt);
+                  Redraw (W);
                   raise System_Failure;
                when Dead => null;
                end case;
@@ -448,10 +484,12 @@ package body Board_Pack is
          case State is
          when Initialised =>
             -- Remove fruit sprite from board
-            Add (Win    => W,
-                 Line   => Line_Position (Fruit.Pos.Y),
-                 Column => Column_Position (Fruit.Pos.X),
-                 Ch     => Space);
+            Writer_Pack.Add (W      => W,
+                             Line   => Line_Position (Fruit.Pos.Y),
+                             Column => Column_Position (Fruit.Pos.X),
+                             Ch     => Space,
+                             P      => Space_Priority,
+                             Wt     => Wt);
             Fruit_Valid := False;
          when others => raise System_Failure;
          end case;

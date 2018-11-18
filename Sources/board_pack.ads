@@ -4,6 +4,7 @@ with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
 with Ada.Real_Time; use Ada.Real_Time;
 with Maze_Pack; use type Maze_Pack.Cell_Contents;
 with Board_Pack_Scores; use Board_Pack_Scores;
+with Writer_Pack; use Writer_Pack;
 
 -- @summary
 -- Provide an interface for interacting synchronously with the screen.
@@ -206,6 +207,10 @@ private
                                             Color => Color_Pair'First,
                                             Attr => (others => False)
                                            );
+   Death : constant Attributed_Character := (Ch => '*',
+                                             Color => Colour_Pairs (Player_Colour),
+                                             Attr => (others => False)
+                                            );
 
    Ghosts_Data_Initial : constant Ghosts_Data :=
      (Settings.Red => (Pos => (X => 2, Y => 2),
@@ -229,5 +234,7 @@ private
    Fruit_Timeout_Handler : constant Timing_Event_Handler := Board.Fruit_Timeout'Access;
 
    Fruit_Timer : Timing_Event;
+
+   Wt : Writer;
 
 end Board_Pack;
