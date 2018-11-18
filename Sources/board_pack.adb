@@ -203,15 +203,10 @@ package body Board_Pack is
          elsif Pause_Countdown > Natural'First then
             Pause_Countdown := Natural'Pred (Pause_Countdown);
          else
-            -- Check the Wipe_Callbacks for any scores which need
-            -- clearing
+            -- Check the Wipe_Callbacks for any scores which need clearing
             Check_Wipes (W, M, Callbacks);
 
             -- Add 'space' where player character is (removing from board)
---              Add (Win    => W,
---                   Line   => Line_Position (Player.Pos.Y),
---                   Column => Column_Position (Player.Pos.X),
---                   Ch     => Space);
             Writer_Pack.Add (W      => W,
                              Line   => Line_Position (Player.Pos.Y),
                              Column => Column_Position (Player.Pos.X),
@@ -274,10 +269,6 @@ package body Board_Pack is
                Player_Char : constant Attributed_Character :=
                  (if Player_Size = Small then Pacman_Small else Pacman_Large);
             begin
---                 Add (Win    => W,
---                      Line   => Line_Position (Player.Pos.Y),
---                      Column => Column_Position (Player.Pos.X),
---                      Ch     => Player_Char);
                Writer_Pack.Add (W      => W,
                                 Line   => Line_Position (Player.Pos.Y),
                                 Column => Column_Position (Player.Pos.X),
@@ -314,10 +305,6 @@ package body Board_Pack is
                      when Maze_Pack.Dot => Fill_Char := Dot;
                      when Maze_Pack.Pill => Fill_Char := Pill;
                      end case;
---                       Add (Win    => Win,
---                            Line   => Line_Position (Ghosts (G).Pos.Y),
---                            Column => Column_Position (Ghosts (G).Pos.X),
---                            Ch     => Fill_Char);
                      Writer_Pack.Add (W      => W,
                                       Line   => Line_Position (Ghosts (G).Pos.Y),
                                       Column => Column_Position (Ghosts (G).Pos.X),
