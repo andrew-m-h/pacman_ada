@@ -3,7 +3,6 @@ with Terminal_Interface.Curses; use Terminal_Interface.Curses;
 with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
 with Ada.Real_Time; use Ada.Real_Time;
 with Maze_Pack; use type Maze_Pack.Cell_Contents;
-with Board_Pack_Scores; use Board_Pack_Scores;
 with Writer_Pack; use Writer_Pack;
 
 -- @summary
@@ -129,8 +128,8 @@ package Board_Pack is
       -- The render cycle can be 'paused' until
       -- Pause_Countdown = 0
       Pause_Countdown : Natural := Natural'First;
-      Callbacks : Score_Callbacks
-        := (others => (Action => Nothing,
+      Callbacks : Scores.Score_Callbacks
+        := (others => (Action => Scores.Nothing,
                        Pos => (Board_Width'First, Board_Height'First),
                        Str => (others => ' '),
                        Length => Natural'First
@@ -168,8 +167,6 @@ private
                           G      : RGB_Colour;
                           B      : RGB_Colour)
      with Inline_Always;
-
-   Null_Str : constant String (1 .. 10) := (others => ' ');
 
    Ghost_Symbol : constant Attributed_Character := (Ch => 'A',
                                                     Color => Color_Pair'First,

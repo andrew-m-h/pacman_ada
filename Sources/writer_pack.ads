@@ -1,6 +1,8 @@
 with Ada.Containers.Bounded_Priority_Queues;
 with Ada.Containers.Synchronized_Queue_Interfaces;
 with Terminal_Interface.Curses; use Terminal_Interface.Curses;
+with Settings; use Settings;
+with Maze_Pack; use Maze_Pack;
 
 package Writer_Pack is
 
@@ -49,4 +51,22 @@ package Writer_Pack is
 
    procedure Perform_Writes (Wt : in out Writer);
 
+   -- The Score Message Interface
+   package Scores is
+      type Score_Action is (Write, Wipe, Nothing);
+
+      type Score_Callback is record
+         Action : Score_Action;
+         Pos : Coordinates;
+         Str : String (1 .. 10);
+         Length : Natural;
+      end record;
+
+      type Score_Callback_Entry is (Score_Red, Score_Blue, Score_Orange, Score_Pink, Score_Fruit);
+
+      type Score_Callbacks is array (Score_Callback_Entry) of Score_Callback;
+
+      procedure Check_Writes (W : Window; Callbacks : in out Score_Callbacks);
+      procedure Check_Wipes (W : Window; M : Maze; Callbacks : in out Score_Callbacks);
+   end Scores;
 end Writer_Pack;

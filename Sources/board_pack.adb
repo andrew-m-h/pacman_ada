@@ -204,7 +204,7 @@ package body Board_Pack is
             Pause_Countdown := Natural'Pred (Pause_Countdown);
          else
             -- Check the Wipe_Callbacks for any scores which need clearing
-            Check_Wipes (W, M, Callbacks);
+            Scores.Check_Wipes (W, M, Callbacks);
 
             -- Add 'space' where player character is (removing from board)
             Writer_Pack.Add (W      => W,
@@ -384,17 +384,17 @@ package body Board_Pack is
                   declare
                      Cancel_Successful : Boolean; pragma Unreferenced (Cancel_Successful);
                      Score_Str : constant String := Score'Image (Fruit.Value);
-                     CB : Score_Callback := (Action => Write,
-                                             Pos    => Fruit.Pos,
-                                             Str    => (others => ' '),
-                                             Length => Score_Str'Length);
+                     CB : Scores.Score_Callback := (Action => Scores.Write,
+                                                    Pos    => Fruit.Pos,
+                                                    Str    => (others => ' '),
+                                                    Length => Score_Str'Length);
                   begin
                      Cancel_Handler (Event     => Fruit_Timer,
                                      Cancelled => Cancel_Successful);
 
                      CB.Str (1 .. Score_Str'Length) := Score_Str;
                      CB.Pos.X := CB.Pos.X - 1;
-                     Callbacks (Score_Fruit) := CB;
+                     Callbacks (Scores.Score_Fruit) := CB;
 
                      Fruit.Value := Fruit.Value * 2;
                      Fruit_Valid := False;
@@ -413,7 +413,7 @@ package body Board_Pack is
 
             Perform_Writes (Wt);
 
-            Check_Writes (W, Callbacks);
+            Scores.Check_Writes (W, Callbacks);
 
             Redraw (W);
          end if;
@@ -432,18 +432,18 @@ package body Board_Pack is
 
                   declare
                      Score_Str : constant String := "YUM!";
-                     CB : Score_Callback := (Action => Write,
-                                             Pos    => Player.Pos,
-                                             Str    => (others => ' '),
-                                             Length => Score_Str'Length);
+                     CB : Scores.Score_Callback := (Action => Scores.Write,
+                                                    Pos    => Player.Pos,
+                                                    Str    => (others => ' '),
+                                                    Length => Score_Str'Length);
                   begin
                      CB.Str (1 .. Score_Str'Length) := Score_Str;
 
                      case G is
-                     when Settings.Red    => Callbacks (Score_Red) := CB;
-                     when Settings.Blue   => Callbacks (Score_Blue) := CB;
-                     when Settings.Pink   => Callbacks (Score_Pink) := CB;
-                     when Settings.Orange => Callbacks (Score_Orange) := CB;
+                     when Settings.Red    => Callbacks (Scores.Score_Red) := CB;
+                     when Settings.Blue   => Callbacks (Scores.Score_Blue) := CB;
+                     when Settings.Pink   => Callbacks (Scores.Score_Pink) := CB;
+                     when Settings.Orange => Callbacks (Scores.Score_Orange) := CB;
                      end case;
 
                      Pause_Countdown := 6;
