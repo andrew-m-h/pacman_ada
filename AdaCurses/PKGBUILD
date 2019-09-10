@@ -11,7 +11,7 @@ license=('MIT')
 
 makedepends=('gcc-ada')
 
-source=('ftp://ftp.invisible-island.net/AdaCurses/current/AdaCurses-20190706.tgz'
+source=('AdaCurses-20190706.tgz'
         'adacurses.gpr.in')
 
 md5sums=('d2cbb2995254d836517eec402ccd000b'
