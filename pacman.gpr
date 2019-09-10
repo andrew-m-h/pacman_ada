@@ -13,11 +13,10 @@ project Pacman is
       when "Production" =>
          for Main use ("main.adb");
          for Source_Dirs use ("Sources/**");
-
+     
       when "Development" =>
          for Main use ("main.adb");
          for Source_Dirs use ("Sources/**");
-
       when "Performance" =>
          for Main use ("main.adb");
          for Source_Dirs use ("Sources/**");
@@ -45,12 +44,16 @@ project Pacman is
 
          when "Production" =>
             for Default_Switches ("ada") use ("-s", "-m");
-
+            for Executable ("main.adb") use "pacman";
+            
          when "Development" =>
             for Default_Switches ("ada") use ("-s", "-g", "-m");
+            for Executable ("main.adb") use "pacman";
 
          when "Performance" =>
             for Default_Switches ("ada") use ("-s", "-m");
+            for Executable ("main.adb") use "pacman";
+
       end case;
    end Builder;
 

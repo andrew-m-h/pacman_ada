@@ -6,6 +6,10 @@ with Terminal_Interface.Curses; use Terminal_Interface.Curses;
 package Fruit_Pack is
    pragma Elaborate_Body;
 
+   -- Record describing a 'fruit time' (when a fruit should appear, for how long and its point value)
+   -- @field Start_Time The time at which the fruit should appear
+   -- @field Duration For how long the fruit should remain on the board
+   -- @field Value The score the player will get should the fruit be eaten
    type Fruit_Time is record
       Start_Time : Time;
       Duration   : Time_Span;

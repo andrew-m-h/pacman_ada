@@ -162,12 +162,16 @@ private
 
    subtype RGB_Colour is RGB_Value range 0 .. 1000;
 
+   -- A call to adacurses Init_Color (americanized spelling) which adds bounds checking
+   -- on the RGB_Colour values. These are allowed to be 2 bytes long, but are only valid in
+   -- the range 0 .. 1000.
    procedure Init_Colour (Colour : Color_Number;
                           R      : RGB_Colour;
                           G      : RGB_Colour;
                           B      : RGB_Colour)
-     with Inline_Always;
+     with Inline;
 
+   -- Symbols used by the program to represent various items
    Ghost_Symbol : constant Attributed_Character := (Ch => 'A',
                                                     Color => Color_Pair'First,
                                                     Attr => (others => False)
@@ -208,7 +212,7 @@ private
                                              Color => Colour_Pairs (Player_Colour),
                                              Attr => (others => False)
                                             );
-
+   -- Initial settings for the ghosts
    Ghosts_Data_Initial : constant Ghosts_Data :=
      (Settings.Red => (Pos => (X => 2, Y => 2),
                        Current_Direction => Left,
