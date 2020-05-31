@@ -191,6 +191,100 @@ package body Board_Pack is
          State := Failure;
       end Set_Failure;
 
+      procedure Reset_Board is
+         -- Player_Char : constant Attributed_Character := Pacman_Large;
+      begin
+         Pause_Countdown := 8;
+
+         -- Add Death Character to board
+         Writer_Pack.Add (W      => W,
+                          Line   => Line_Position (Player.Pos.Y),
+                          Column => Column_Position (Player.Pos.X),
+                          Ch     => Death,
+                          P      => 23,
+                          Wt     => Wt);
+
+         for G in Ghost loop
+            -- Fill behind with appropriate character
+            declare
+               Fill_Char : Attributed_Character;
+               Pos : constant Coordinates := Ghosts (G).Pos;
+            begin
+               case M.Cells (Pos.X, Pos.Y).Contents is
+               when Maze_Pack.None => Fill_Char := Space;
+               when Maze_Pack.Dot => Fill_Char := Dot;
+               when Maze_Pack.Pill => Fill_Char := Pill;
+               end case;
+               Writer_Pack.Add (W      => W,
+                                Line   => Line_Position (Ghosts (G).Pos.Y),
+                                Column => Column_Position (Ghosts (G).Pos.X),
+                                Ch     => Fill_Char,
+                                P      => Space_Priority,
+                                Wt     => Wt);
+            end;
+         end loop;
+
+         Ghosts := Ghosts_Data_Initial;
+
+         for G in Ghost loop
+            declare
+               Ghost_Char : Attributed_Character := Ghosts (G).Symbol;
+               P : Priority := Ghost_Priority;
+            begin
+               case G is
+                  when Settings.Red =>
+                     Ghost_Char.Color := Colour_Pairs (Red_Ghost);
+                     P := P + 3;
+                  when Settings.Blue =>
+                     Ghost_Char.Color := Colour_Pairs (Blue_Ghost);
+                     P := P + 2;
+                  when Settings.Orange =>
+                     Ghost_Char.Color := Colour_Pairs (Orange_Ghost);
+                     P := P + 1;
+                  when Settings.Pink =>
+                     Ghost_Char.Color := Colour_Pairs (Pink_Ghost);
+               end case;
+
+               if Ghosts (G).State = Zombie then
+                  if Use_Colour then
+                     Ghost_Char.Color := Colour_Pairs (Zombie_Ghost);
+                  else
+                     Ghost_Char.Attr.Dim_Character := True;
+                  end if;
+               end if;
+
+               Writer_Pack.Add (W      => W,
+                                Line   => Line_Position (Ghosts (G).Pos.Y),
+                                Column => Column_Position (Ghosts (G).Pos.X),
+                                Ch     => Ghost_Char,
+                                P      => P,
+                                Wt     => Wt);
+            end;
+         end loop;
+
+         Perform_Writes (Wt);
+         Redraw (W);
+
+         -- Add 'space' where player character is (removing from board)
+         Writer_Pack.Add (W      => W,
+                          Line   => Line_Position (Player.Pos.Y),
+                          Column => Column_Position (Player.Pos.X),
+                          Ch     => Space,
+                          P      => Space_Priority,
+                          Wt     => Wt);
+
+         Player_Size := Large;
+         Player.Pos := M.Initial_Player_Pos;
+         Player.Current_Direction := Left;
+         Player.Next_Direction := Left;
+
+      end Reset_Board;
+
+      procedure Restart_Board is
+      begin
+         null;
+      end Restart_Board;
+
       entry Render
       -- Run once initialised and there are no ghosts waiting on the make_ghost_move entries
         when State /= Uninitialised
@@ -199,9 +293,11 @@ package body Board_Pack is
 
          if State = Failure then
             raise System_Failure;
+
             -- When paused to eat a fruit, erase the score
          elsif Pause_Countdown > Natural'First then
             Pause_Countdown := Natural'Pred (Pause_Countdown);
+
          else
             -- Check the Wipe_Callbacks for any scores which need clearing
             Scores.Check_Wipes (W, M, Callbacks);
@@ -417,7 +513,15 @@ package body Board_Pack is
 
             Redraw (W);
          end if;
+      exception
+         when Player_Dead =>
+            Perform_Writes (Wt);
 
+            Scores.Check_Writes (W, Callbacks);
+
+            Redraw (W);
+
+            Reset_Board;
       end Render;
 
       procedure Check_Collision is
@@ -450,15 +554,8 @@ package body Board_Pack is
                   end;
 
                when Alive =>
-                  Writer_Pack.Add (W      => W,
-                                   Line   => Line_Position (Ghosts (G).Pos.Y),
-                                   Column => Column_Position (Ghosts (G).Pos.X),
-                                   Ch     => Death,
-                                   P      => 22,
-                                   Wt     => Wt);
-                  Perform_Writes (Wt);
-                  Redraw (W);
-                  raise System_Failure;
+
+                  raise Player_Dead;
                when Dead => null;
                end case;
             end if;

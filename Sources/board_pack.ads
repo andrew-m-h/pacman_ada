@@ -126,6 +126,10 @@ package Board_Pack is
       procedure Fruit_Timeout (Event : in out Timing_Event);
    private
       procedure Check_Collision;
+      -- reset since player ate all pills
+      procedure Restart_Board;
+      -- reset since player died (but didn't eat all pills)
+      procedure Reset_Board;
 
       Player : Player_Data;
       Player_Score : Score := Score'First;
@@ -251,7 +255,7 @@ private
                Current_Direction => Up,
                State => Alive,
                Symbol => Ghost_Symbol),
-      Settings.Orange => (Pos => (X => 10, Y => 28),
+      Settings.Orange => (Pos => (X => 10, Y => 29),
                  Current_Direction => Down,
                  State => Alive,
                  Symbol => Ghost_Symbol)
@@ -262,5 +266,7 @@ private
    Fruit_Timer : Timing_Event;
 
    Wt : Writer;
+
+   Player_Dead : exception;
 
 end Board_Pack;
