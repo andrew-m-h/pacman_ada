@@ -31,6 +31,7 @@ package Board_Pack is
    -- Record describing the state of the Ghosts
    -- @field Pos The position of a ghost on the board
    -- @field Current_Direction The current heading of the ghost
+   -- @field State State describing if ghosts are either alive, dead or zombified
    -- @field Symbol How the ghost is represented on the board
    type Ghost_Data is record
       Pos : Coordinates;
@@ -75,15 +76,20 @@ package Board_Pack is
       entry Initialise;
 
       -- Specify the player position on the board
+      -- @param Pos Position of the player
       entry Set_Player_Pos (Pos : Coordinates);
       -- Specify a move made by the player (through the keyboard)
+      -- @param Dir Direction the player shall move (if valid)
       entry Make_Player_Move (Dir : Direction);
 
       -- Set the ghost position on the baord for a specific ghost
+      -- @param Pos Position to set the ghost to
       entry Set_Ghost_Pos (Ghost) (Pos : Coordinates);
       -- Make a move for a specific ghost on the board
+      -- @param Dir Direction the ghosts shall move (if valid)
       entry Make_Ghost_Move (Ghost) (Dir : Direction);
       -- Change the state of a specific ghost
+      -- @param S The state of the ghosts
       entry Set_Ghost_State (Ghost) (S : Ghost_State);
       -- A failure occured somewhere, tell the board
       procedure Set_Failure;
@@ -97,10 +103,13 @@ package Board_Pack is
       function Get_Player_Heading return Direction;
 
       -- Retrieve the Position of a ghost on the board
+      -- @param G Ghost whose position is to be returned
       function Get_Ghost_Pos (G : Ghost) return Coordinates;
       -- Retrieve the state of a ghost
+      -- @param G Ghost whose state is to be returned
       function Get_Ghost_State (G : Ghost) return Ghost_State;
       -- Return a description of the cell currently occupied by ghost G
+      -- @param G Ghost whose cell state is to be returned
       function Get_Cell (G : Ghost) return Maze_Pack.Maze_Cell;
       -- Return the internal state error state of the board.
       function Get_State return Board_State;
@@ -109,9 +118,11 @@ package Board_Pack is
       function Win return Window;
 
       -- place a fruit on the board (involves setting up fruit timeout)
+      -- @param F Fruite to be placed
       entry Place_Fruit (F : Fruit_Type);
       -- Remove a fruit from board due to a timeout.
       -- Called from a Timing_Event object
+      -- @param Event Timing event which caused the timeout
       procedure Fruit_Timeout (Event : in out Timing_Event);
    private
       procedure Check_Collision;
@@ -144,6 +155,16 @@ private
 
    Use_Colour : Boolean := Boolean'Invalid_Value;
 
+   -- Type representing the symbol colours
+   -- These are mapped to Redefinable_Color_Pairs which allow easy setting of colours
+   -- @value Player_Colour Colour of the player Icon (yellow if possible)
+   -- @value Red_Ghost Colour of the red ghost (red if possible)
+   -- @value Blue_Ghost Colour of the blue ghost (blue if possible)
+   -- @value Orange_Ghost Colour of the orange ghost (orange if possible)
+   -- @value Pink_Ghost Colour of the pink ghost (pink if possible)
+   -- @value Zombie_Ghost Colour of the zombie ghosts (dark blue if possible)
+   -- @value Border_Element Colour of the borders of the maze
+   -- @value Ghost_Error Colour of the ghosts when an error has occurred
    type Symbol_Colour is (Player_Colour, Red_Ghost,
                           Blue_Ghost, Orange_Ghost,
                           Pink_Ghost, Zombie_Ghost,
@@ -165,6 +186,10 @@ private
    -- A call to adacurses Init_Color (americanized spelling) which adds bounds checking
    -- on the RGB_Colour values. These are allowed to be 2 bytes long, but are only valid in
    -- the range 0 .. 1000.
+   -- @param Colour The colour_number to assign the new colour to
+   -- @param R Red RGB value
+   -- @param G Green RGB value
+   -- @param B Blue RGB value
    procedure Init_Colour (Colour : Color_Number;
                           R      : RGB_Colour;
                           G      : RGB_Colour;

@@ -14,13 +14,18 @@ package Settings is
    -- @value Alive When a ghost is in normal mode, not eaten or zombie
    -- @value Dead When a ghost has been eaten by player in zombie mode
    -- @value Zombie When a player has consumed a power pellet and turned
-   -- the ghosts blue
    type Ghost_State is (Alive, Dead, Zombie);
 
    -- The ghosts have two modes, which the switch between on a timed basis
+   -- @value Chase The mode in which ghosts are chasing the player
+   -- @value The mode in which a pill has been eaten, and the ghosts are fleeing/scattering
    type Ghost_Mode is (Chase, Scatter);
 
    -- Four directions entities can move
+   -- @value Left Leftward Direction
+   -- @value Right Rightward Direction
+   -- @value Up Up Screen Direction
+   -- @value Down Down Screen Direction
    type Direction is (Left, Right, Up, Down);
 
    -- Players Score

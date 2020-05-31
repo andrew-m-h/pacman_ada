@@ -33,6 +33,12 @@ package Maze_Pack is
    type Maze_String is array (Board_Height) of String (Board_Width);
 
    -- Holds all necessary information about a maze read from file
+   -- @field Cells The board encoded as Maze_Cell types interpreted from the Ascii board
+   -- @field Maze_Str 2d array of the actual characters which make up the maze
+   -- @field Initial_Ghost_Pos the positions of the ghosts for this maze
+   -- @field Initial_Player_Pos The position of the player at the start for this maze
+   -- @field Maze_Width The width of the maze (in characters)
+   -- @field Maze_Height The height of the maze (in characters)
    type Maze is record
       Cells : Maze_Cells := (others => (others =>
                                (Contents => None,
@@ -52,7 +58,11 @@ package Maze_Pack is
    Parse_Error : exception;
    File_Error : exception;
 private
-
+   -- Determine if a charcter is one which forms a boundary for the maze ('|', '+' etc)
+   -- @param Ch The character to be determined
    function Is_Border_Char (Ch : Character) return Boolean;
+
+   -- Map characters to Cell_Contents types
+   -- @param Ch The character to be mapped to a cell_contents value
    function Get_Contents (Ch : Character) return Cell_Contents;
 end Maze_Pack;

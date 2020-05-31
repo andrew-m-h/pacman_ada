@@ -10,3 +10,4 @@ AdaCurses/*
 !AdaCurses/PKGBUILD
 !AdaCurses/adacurses.gpr.in
 !AdaCurses/AdaCurses-20190706.tgz
+!AdaCurses/Makefile

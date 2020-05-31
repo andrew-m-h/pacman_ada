@@ -17,6 +17,13 @@ package Writer_Pack is
    Fruit_Priority : constant Priority := 6;
    Space_Priority : constant Priority := 2;
 
+   -- A job which describes a character to be written to the screen with some priority
+   -- which indicates the order of the writing
+   -- @field W The window to write to
+   -- @field Line The row of the board to which to write to
+   -- @field Column The Column to place the character
+   -- @field Ch Character to be written
+   -- @field P The priority with which to write the character
    type Writer_Job is record
       W : Window;
       Line : Line_Position;
@@ -27,9 +34,16 @@ package Writer_Pack is
 
    package Writer_Interface is new Ada.Containers.Synchronized_Queue_Interfaces (Writer_Job);
 
+   -- Get the priority of a writer job (for use in the Writer_Priority_Queue)
+   -- @param W Writer Job to return the priority of
    function Get_Priority (W : Writer_Job) return Priority;
+
+   -- Order two priorities to allow higher priority characters to be written later
+   -- @param L Left priority
+   -- @param R Right Priority
    function Before (L, R : Priority) return Boolean;
 
+   -- Priority Queue used to sequence character writing based upon the priority of the job
    package Writer_Priority_Queue is
      new Ada.Containers.Bounded_Priority_Queues
        (Queue_Interfaces => Writer_Interface,
@@ -41,6 +55,12 @@ package Writer_Pack is
 
    subtype Writer is Writer_Priority_Queue.Queue;
 
+   -- Add a character to the priority queue with a specified priority
+   -- @param W Window to add the character to
+   -- @param Line Line of the window to add the character to
+   -- @param Column Column of the window to add the character to
+   -- @param P Priority with which to write the character
+   -- @param Wt Writer to insert the character into
    procedure Add (W : Window;
                   Line : Line_Position;
                   Column : Column_Position;
@@ -49,10 +69,13 @@ package Writer_Pack is
                   Wt : in out Writer
                  );
 
+   -- Perform all of the writes currently stored within the writer (in order of priority)
+   -- @param Wt Writer to use, is emptied in the process
    procedure Perform_Writes (Wt : in out Writer);
 
    -- The Score Message Interface
    package Scores is
+
       type Score_Action is (Write, Wipe, Nothing);
 
       type Score_Callback is record

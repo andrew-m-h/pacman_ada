@@ -19,6 +19,8 @@ package Scatter_Timer is
 
    -- Protected object used to set the modes of each ghost upon a timer signal.
    protected Scatter_Timer_Object is
+      -- Called when a timeout event occurs. Sets the ghost scattering based upon the Schedule
+      -- @param Event Timeout Event object which caused the timeout
       procedure Scatter_Timeout (Event : in out Timing_Event);
    private
       M : Ghost_Mode := Scatter;

@@ -108,7 +108,7 @@ package body Board_Pack is
          end if;
 
          -- Read in board from external file
-         Maze_Pack.Read_Maze ("tmp", M);
+         Maze_Pack.Read_Maze ("maze.asc", M);
 
          -- Draw board on screen
          for Y in Board_Height'First .. M.Maze_Height loop
